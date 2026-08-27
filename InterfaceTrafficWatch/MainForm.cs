@@ -11,12 +11,14 @@ namespace InterfaceTrafficWatch
 {
     public partial class MainForm : Form
     {
+        public static MainForm Instance { get; private set; }
         private int timerUpdate = 500;
         private NetworkInterface nic;
         private int maxDl = 1000;
         private int maxUp = 200;
+        private bool displayInBits = false; // false = bytes (KB/s), true = bits (Kb/s)
 
-        private Timer timer;
+        private System.Timers.Timer timer;
         private readonly List<int> dataIn = new List<int>();
         private readonly List<int> dataOut = new List<int>();
 
@@ -51,6 +53,21 @@ namespace InterfaceTrafficWatch
                 try
                 {
                     frameBackground = this.BackgroundImage;
+                    // Localize menu and window title from resources (use ResourceManager)
+                    try
+                    {
+                        var rm = NetSpeed.Properties.Resources.ResourceManager;
+                        var rc = NetSpeed.Properties.Resources.Culture;
+                        this.Text = rm.GetString("MainForm_Title", rc) ?? this.Text;
+                        Minimalizuj.Text = rm.GetString("Menu_Minimize", rc) ?? Minimalizuj.Text;
+                        toolStripMenuItem1.Text = rm.GetString("Menu_AlwaysOnTop", rc) ?? toolStripMenuItem1.Text;
+                        toolStripMenuItem2.Text = rm.GetString("Menu_Config", rc) ?? toolStripMenuItem2.Text;
+                        toolStripMenuItem3.Text = rm.GetString("Menu_About", rc) ?? toolStripMenuItem3.Text;
+                        toolStripMenuItem4.Text = rm.GetString("Menu_Exit", rc) ?? toolStripMenuItem4.Text;
+                    }
+                    catch { }
+
+                    frameBackground = this.BackgroundImage;
                     if (frameBackground == null)
                         frameBackground = NetSpeed.Properties.Resources.metal1;
                 }
@@ -58,6 +75,9 @@ namespace InterfaceTrafficWatch
                 {
                     frameBackground = this.BackgroundImage;
                 }
+
+                // register instance for runtime culture updates
+                Instance = this;
 
                 ReloadConfig();
                 InitializeNetwork();
@@ -74,6 +94,59 @@ namespace InterfaceTrafficWatch
                 LogError("Konstruktor", ex);
                 MessageBox.Show("Błąd inicjalizacji aplikacji:\n" + ex.Message, "Błąd",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        public void ApplyCulture(string culture = null)
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(culture))
+                {
+                    try
+                    {
+                        var ci = new System.Globalization.CultureInfo(culture);
+                        NetSpeed.Properties.Resources.Culture = ci;
+                        System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = ci;
+                        System.Threading.Thread.CurrentThread.CurrentUICulture = ci;
+                    }
+                    catch { }
+                }
+
+                var rm = NetSpeed.Properties.Resources.ResourceManager;
+                var rc = NetSpeed.Properties.Resources.Culture;
+
+                // Update menu texts and title
+                try
+                {
+                    this.Text = rm.GetString("MainForm_Title", rc) ?? this.Text;
+                    Minimalizuj.Text = rm.GetString("Menu_Minimize", rc) ?? Minimalizuj.Text;
+                    toolStripMenuItem1.Text = rm.GetString("Menu_AlwaysOnTop", rc) ?? toolStripMenuItem1.Text;
+                    toolStripMenuItem2.Text = rm.GetString("Menu_Config", rc) ?? toolStripMenuItem2.Text;
+                    toolStripMenuItem3.Text = rm.GetString("Menu_About", rc) ?? toolStripMenuItem3.Text;
+                    toolStripMenuItem4.Text = rm.GetString("Menu_Exit", rc) ?? toolStripMenuItem4.Text;
+                }
+                catch { }
+
+                // Force UI refresh
+                this.Invalidate();
+                this.Refresh();
+
+                // Notify other open forms (call OnCultureChanged if present)
+                foreach (System.Windows.Forms.Form f in System.Windows.Forms.Application.OpenForms)
+                {
+                    if (f == this) continue;
+                    try
+                    {
+                        var mi = f.GetType().GetMethod("OnCultureChanged", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+                        mi?.Invoke(f, new object[] { });
+                    }
+                    catch { }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogError("ApplyCulture", ex);
             }
         }
 
@@ -96,6 +169,8 @@ namespace InterfaceTrafficWatch
 
                 if (reg.GetValue("MaxDL") is int mdl) maxDl = Math.Max(1, mdl);
                 if (reg.GetValue("MaxUP") is int mup) maxUp = Math.Max(1, mup);
+                if (reg.GetValue("DisplayInBits") is int dib) displayInBits = dib != 0;
+
 
                 if (reg.GetValue("Timer") is int t)
                 {
@@ -179,11 +254,29 @@ namespace InterfaceTrafficWatch
         {
             try
             {
-                timer = new Timer { Interval = timerUpdate };
-                timer.Tick += (s, e) =>
+                // Use System.Timers.Timer to decouple sampling from the UI message loop
+                if (timer != null)
                 {
-                    try { UpdateNetworkInterface(); }
-                    catch (Exception ex) { LogError("Timer Tick", ex); }
+                    try { timer.Stop(); timer.Dispose(); } catch { }
+                }
+
+                timer = new System.Timers.Timer(timerUpdate);
+                timer.AutoReset = true;
+                timer.Elapsed += (s, e) =>
+                {
+                    try
+                    {
+                        // Marshal to UI thread for safe UI updates
+                        if (!this.IsDisposed && this.IsHandleCreated)
+                        {
+                            try { this.BeginInvoke((Action)(() => { try { UpdateNetworkInterface(); } catch (Exception ex) { LogError("Timer Tick", ex); } })); }
+                            catch { }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        LogError("Timer Elapsed", ex);
+                    }
                 };
                 timer.Start();
             }
@@ -264,7 +357,13 @@ namespace InterfaceTrafficWatch
                     }
 
                     g.DrawString(received + " in", font, brushText, pad + 4, pad + 2);
-                    g.DrawString(sent + " out", font, brushText, pad + 4, this.Height / 2 + 2);
+                    // localize "in" / "out"
+                    var rm = NetSpeed.Properties.Resources.ResourceManager;
+                    var rc = NetSpeed.Properties.Resources.Culture;
+                    string inLabel = rm.GetString("MainForm_In", rc) ?? "in";
+                    string outLabel = rm.GetString("MainForm_Out", rc) ?? "out";
+                    g.DrawString(received + " " + inLabel, font, brushText, pad + 4, pad + 2);
+                    g.DrawString(sent + " " + outLabel, font, brushText, pad + 4, this.Height / 2 + 2);
 
                     using (var midPen = new Pen(Color.Gray, 1))
                         g.DrawLine(midPen, pad, this.Height / 2, this.Width - pad, this.Height / 2);
@@ -305,7 +404,11 @@ namespace InterfaceTrafficWatch
                     notifyIcon1.Icon = Icon.FromHandle(bmp.GetHicon());
                 }
 
-                string text = string.Format("DL {0:F0} UP {1:F0} KB/s", dlSpeed, upSpeed);
+                // Format speeds for display (convert from KiB/s to Kb/s/Mb/s as needed)
+                string dlText = FormatSpeed(dlSpeed);
+                string upText = FormatSpeed(upSpeed);
+                string trayFmt = NetSpeed.Properties.Resources.ResourceManager.GetString("MainForm_TrayFormat", NetSpeed.Properties.Resources.Culture) ?? "DL {0} UP {1}";
+                string text = string.Format(trayFmt, dlText, upText);
                 if (text.Length > 63)
                     text = text.Substring(0, 63);
 
@@ -314,6 +417,47 @@ namespace InterfaceTrafficWatch
             catch (Exception ex)
             {
                 LogError("paintTray", ex);
+            }
+        }
+
+        private string FormatSpeed(double kibPerSec)
+        {
+            try
+            {
+                if (double.IsNaN(kibPerSec) || double.IsInfinity(kibPerSec))
+                    return "---";
+
+                if (displayInBits)
+                {
+                    // Convert KiB/s -> kilobits/s
+                    double kilobits = kibPerSec * 8.0;
+                    if (kilobits >= 1000.0)
+                    {
+                        double mb = kilobits / 1000.0;
+                        return string.Format("{0:F1} Mb/s", mb);
+                    }
+                    else
+                    {
+                        return string.Format("{0:F0} Kb/s", kilobits);
+                    }
+                }
+                else
+                {
+                    // Show in bytes: KB/s or MB/s (using 1024)
+                    if (kibPerSec >= 1024.0)
+                    {
+                        double mb = kibPerSec / 1024.0;
+                        return string.Format("{0:F1} MB/s", mb);
+                    }
+                    else
+                    {
+                        return string.Format("{0:F0} KB/s", kibPerSec);
+                    }
+                }
+            }
+            catch
+            {
+                return "---";
             }
         }
 
@@ -373,8 +517,9 @@ namespace InterfaceTrafficWatch
                 dataIn.Add((int)bytesReceivedSpeed);
                 dataOut.Add((int)bytesSentSpeed);
 
-                string sent = string.Format("{0:F1} KB/s", bytesSentSpeed);
-                string received = string.Format("{0:F1} KB/s", bytesReceivedSpeed);
+                // Prepare human-friendly strings for chart/tray (switch to Mb/s when large)
+                string sent = FormatSpeed(bytesSentSpeed);
+                string received = FormatSpeed(bytesReceivedSpeed);
 
                 paintTray(bytesReceivedSpeed, bytesSentSpeed);
                 paintCharts(sent, received);
@@ -548,6 +693,7 @@ namespace InterfaceTrafficWatch
                 LogError("OnFormClosing", ex);
             }
             base.OnFormClosing(e);
+
         }
 
         // ===== puste metody pod stary Designer =====

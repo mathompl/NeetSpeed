@@ -127,4 +127,67 @@
   <data name="IMG_4058_rawlr" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Images\IMG_4058_rawlr.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="Setup_Label_Interface">
+    <value>Interfejs</value>
+  </data>
+  <data name="Setup_MaxDL">
+    <value>Max pasmo wch.</value>
+  </data>
+  <data name="Setup_MaxUP">
+    <value>Max pasmo wych.</value>
+  </data>
+  <data name="Setup_Units_KBs">
+    <value>KB/s</value>
+  </data>
+  <data name="Setup_Refresh">
+    <value>Odświeżanie</value>
+  </data>
+  <data name="Setup_ms">
+    <value>ms</value>
+  </data>
+  <data name="Setup_OK">
+    <value>OK</value>
+  </data>
+  <data name="Setup_Cancel">
+    <value>Anuluj</value>
+  </data>
+  <data name="Setup_Title">
+    <value>NetSpeed konfig</value>
+  </data>
+  <data name="Setup_Check_DisplayInBits">
+    <value>Wyświetlaj w bitach (Kb/s)</value>
+  </data>
+  <data name="Setup_Label_Language">
+    <value>Język</value>
+  </data>
+  <data name="MainForm_InitError">
+    <value>Błąd inicjalizacji aplikacji:\n</value>
+  </data>
+  <data name="MainForm_TrayFormat">
+    <value>DL {0} UP {1}</value>
+  </data>
+  <data name="MainForm_In">
+    <value>in</value>
+  </data>
+  <data name="MainForm_Out">
+    <value>out</value>
+  </data>
+  <data name="Menu_Minimize">
+    <value>Minimalizuj</value>
+  </data>
+  <data name="Menu_AlwaysOnTop">
+    <value>Zawsze na wierzchu</value>
+  </data>
+  <data name="Menu_Config">
+    <value>Konfig</value>
+  </data>
+  <data name="Menu_About">
+    <value>O programie</value>
+  </data>
+  <data name="Menu_Exit">
+    <value>Zakończ</value>
+  </data>
+  <data name="MainForm_Title">
+    <value>Mathom NetSpeed</value>
+  </data>
 </root>
