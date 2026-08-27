@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Setup_Label_Interface"><value>インターフェース</value></data>
+  <data name="Setup_MaxDL"><value>最大ダウンロード</value></data>
+  <data name="Setup_MaxUP"><value>最大アップロード</value></data>
+  <data name="Setup_Units_KBs"><value>KB/s</value></data>
+  <data name="Setup_Refresh"><value>更新</value></data>
+  <data name="Setup_ms"><value>ms</value></data>
+  <data name="Setup_OK"><value>OK</value></data>
+  <data name="Setup_Cancel"><value>キャンセル</value></data>
+  <data name="Setup_Title"><value>NetSpeed 設定</value></data>
+  <data name="Setup_Check_DisplayInBits"><value>ビットで表示 (Kb/s)</value></data>
+  <data name="Setup_Label_Language"><value>言語</value></data>
+  <data name="Menu_Minimize"><value>最小化</value></data>
+  <data name="Menu_Show"><value>表示</value></data>
+  <data name="Menu_AlwaysOnTop"><value>常に最前面</value></data>
+  <data name="Menu_Config"><value>設定</value></data>
+  <data name="Menu_About"><value>このアプリについて</value></data>
+  <data name="Menu_Exit"><value>終了</value></data>
+  <data name="Msg_InitError"><value>アプリケーションの初期化エラー:\n</value></data>
+  <data name="Msg_SetupError"><value>設定を開くときにエラーが発生しました:\n</value></data>
+  <data name="Title_Error"><value>エラー</value></data>
+  <data name="MainForm_Title"><value>Mathom NetSpeed</value></data>
+  <data name="Tray_Format_DLUP"><value>下り {0:F0} 上り {1:F0} KB/s</value></data>
+	<data name="MainForm_TrayFormat"><value>下り {0} 上り {1}</value></data>
+  <data name="MainForm_In"><value>受信</value></data>
+  <data name="MainForm_Out"><value>送信</value></data>
+  <data name="Lang_English"><value>英語</value></data>
+  <data name="Lang_Polish"><value>ポーランド語</value></data>
+  <data name="Lang_Chinese"><value>中国語</value></data>
+  <data name="Lang_Japanese"><value>日本語</value></data>
+</root>

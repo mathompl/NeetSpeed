@@ -23,6 +23,7 @@ namespace InterfaceTrafficWatch
                     try
                     {
                         var ci = new CultureInfo(culture);
+                        Properties.Resources.Culture = ci;
                         CultureInfo.DefaultThreadCurrentUICulture = ci;
                         Thread.CurrentThread.CurrentUICulture = ci;
                     }

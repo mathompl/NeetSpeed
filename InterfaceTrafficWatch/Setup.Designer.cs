@@ -42,6 +42,7 @@
             this.label5 = new System.Windows.Forms.Label();
             this.textBox3 = new System.Windows.Forms.TextBox();
             this.chkDisplayInBits = new System.Windows.Forms.CheckBox();
+            this.chkAutoStart = new System.Windows.Forms.CheckBox();
             this.label6 = new System.Windows.Forms.Label();
             this.button2 = new System.Windows.Forms.Button();
             this.SuspendLayout();
@@ -84,7 +85,7 @@
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(79, 155);
+            this.button1.Location = new System.Drawing.Point(13, 187);
             this.button1.Margin = new System.Windows.Forms.Padding(2);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(56, 19);
@@ -178,6 +179,17 @@
             this.chkDisplayInBits.Text = "Wyświetlaj w bitach (Kb/s)";
             this.chkDisplayInBits.UseVisualStyleBackColor = true;
             // 
+            // chkAutoStart
+            // 
+            this.chkAutoStart.AutoSize = true;
+            this.chkAutoStart.Location = new System.Drawing.Point(11, 154);
+            this.chkAutoStart.Margin = new System.Windows.Forms.Padding(2);
+            this.chkAutoStart.Name = "chkAutoStart";
+            this.chkAutoStart.Size = new System.Drawing.Size(125, 17);
+            this.chkAutoStart.TabIndex = 16;
+            this.chkAutoStart.Text = "Uruchom przy starcie";
+            this.chkAutoStart.UseVisualStyleBackColor = true;
+            // 
             // label6
             // 
             this.label6.AutoSize = true;
@@ -190,7 +202,7 @@
             // 
             // button2
             // 
-            this.button2.Location = new System.Drawing.Point(150, 155);
+            this.button2.Location = new System.Drawing.Point(253, 187);
             this.button2.Margin = new System.Windows.Forms.Padding(2);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(56, 19);
@@ -203,8 +215,9 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(320, 190);
+            this.ClientSize = new System.Drawing.Size(320, 209);
             this.Controls.Add(this.button2);
+            this.Controls.Add(this.chkAutoStart);
             this.Controls.Add(this.chkDisplayInBits);
             this.Controls.Add(this.lblLanguage);
             this.Controls.Add(this.cmbLanguage);
@@ -244,6 +257,7 @@
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.Button button2;
         private System.Windows.Forms.CheckBox chkDisplayInBits;
+        private System.Windows.Forms.CheckBox chkAutoStart;
         private System.Windows.Forms.Label lblLanguage;
         private System.Windows.Forms.ComboBox cmbLanguage;
     }

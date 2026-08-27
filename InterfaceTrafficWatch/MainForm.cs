@@ -11,6 +11,33 @@ namespace InterfaceTrafficWatch
 {
     public partial class MainForm : Form
     {
+        // Safe resource helpers
+        private string GetRes(string key, string fallback)
+        {
+            try
+            {
+                return Properties.Resources.ResourceManager.GetString(key, Properties.Resources.Culture) ?? fallback;
+            }
+            catch
+            {
+                return fallback;
+            }
+        }
+
+        private System.Drawing.Bitmap SafeGetBitmap(string name)
+        {
+            try
+            {
+                object obj = Properties.Resources.ResourceManager.GetObject(name, Properties.Resources.Culture);
+                return obj as System.Drawing.Bitmap;
+            }
+            catch { return null; }
+        }
+
+        [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+        private static extern bool DestroyIcon(IntPtr hIcon);
+
+        // singleton reference used by Setup to notify about culture change
         public static MainForm Instance { get; private set; }
         private int timerUpdate = 500;
         private NetworkInterface nic;
@@ -44,6 +71,7 @@ namespace InterfaceTrafficWatch
             try
             {
                 InitializeComponent();
+                Instance = this;
                 this.DoubleBuffered = true;
                 this.FormBorderStyle = FormBorderStyle.None;
                 this.TransparencyKey = Color.FromArgb(255, 128, 128);
@@ -53,23 +81,21 @@ namespace InterfaceTrafficWatch
                 try
                 {
                     frameBackground = this.BackgroundImage;
-                    // Localize menu and window title from resources (use ResourceManager)
+                    // Localize menu and window title from resources (use safe accessor)
                     try
                     {
-                        var rm = NetSpeed.Properties.Resources.ResourceManager;
-                        var rc = NetSpeed.Properties.Resources.Culture;
-                        this.Text = rm.GetString("MainForm_Title", rc) ?? this.Text;
-                        Minimalizuj.Text = rm.GetString("Menu_Minimize", rc) ?? Minimalizuj.Text;
-                        toolStripMenuItem1.Text = rm.GetString("Menu_AlwaysOnTop", rc) ?? toolStripMenuItem1.Text;
-                        toolStripMenuItem2.Text = rm.GetString("Menu_Config", rc) ?? toolStripMenuItem2.Text;
-                        toolStripMenuItem3.Text = rm.GetString("Menu_About", rc) ?? toolStripMenuItem3.Text;
-                        toolStripMenuItem4.Text = rm.GetString("Menu_Exit", rc) ?? toolStripMenuItem4.Text;
+                        this.Text = GetRes("MainForm_Title", this.Text);
+                        Minimalizuj.Text = GetRes("Menu_Minimize", Minimalizuj.Text);
+                        toolStripMenuItem1.Text = GetRes("Menu_AlwaysOnTop", toolStripMenuItem1.Text);
+                        toolStripMenuItem2.Text = GetRes("Menu_Config", toolStripMenuItem2.Text);
+                        toolStripMenuItem3.Text = GetRes("Menu_About", toolStripMenuItem3.Text);
+                        toolStripMenuItem4.Text = GetRes("Menu_Exit", toolStripMenuItem4.Text);
                     }
                     catch { }
 
                     frameBackground = this.BackgroundImage;
                     if (frameBackground == null)
-                        frameBackground = NetSpeed.Properties.Resources.metal1;
+                        frameBackground = SafeGetBitmap("metal1");
                 }
                 catch
                 {
@@ -92,8 +118,18 @@ namespace InterfaceTrafficWatch
             catch (Exception ex)
             {
                 LogError("Konstruktor", ex);
-                MessageBox.Show("Błąd inicjalizacji aplikacji:\n" + ex.Message, "Błąd",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                try
+                {
+                    var rm = Properties.Resources.ResourceManager;
+                    var rc = Properties.Resources.Culture;
+                    var title = rm.GetString("Title_Error", rc) ?? "Error";
+                    var msg = rm.GetString("Msg_InitError", rc) ?? "Application initialization error:\n";
+                    MessageBox.Show(msg + ex.Message, title, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                catch
+                {
+                    MessageBox.Show("Application initialization error:\n" + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
 
@@ -106,15 +142,15 @@ namespace InterfaceTrafficWatch
                     try
                     {
                         var ci = new System.Globalization.CultureInfo(culture);
-                        NetSpeed.Properties.Resources.Culture = ci;
+                        Properties.Resources.Culture = ci;
                         System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = ci;
                         System.Threading.Thread.CurrentThread.CurrentUICulture = ci;
                     }
                     catch { }
                 }
 
-                var rm = NetSpeed.Properties.Resources.ResourceManager;
-                var rc = NetSpeed.Properties.Resources.Culture;
+                var rm = Properties.Resources.ResourceManager;
+                var rc = Properties.Resources.Culture;
 
                 // Update menu texts and title
                 try
@@ -194,12 +230,27 @@ namespace InterfaceTrafficWatch
                         }
                     }
                 }
+                // apply UI culture if saved
+                try
+                {
+                    if (reg.GetValue("UICulture") is string uc && !string.IsNullOrWhiteSpace(uc))
+                    {
+                        var ci = new System.Globalization.CultureInfo(uc);
+                        Properties.Resources.Culture = ci;
+                        System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = ci;
+                        System.Threading.Thread.CurrentThread.CurrentUICulture = ci;
+                        ApplyCulture(uc);
+                    }
+                }
+                catch { }
             }
             catch (Exception ex)
             {
                 LogError("ReloadConfig", ex);
             }
         }
+
+        // ApplyCulture overload removed (use single implementation above)
 
         private void InitializeNetwork()
         {
@@ -358,10 +409,8 @@ namespace InterfaceTrafficWatch
 
                     g.DrawString(received + " in", font, brushText, pad + 4, pad + 2);
                     // localize "in" / "out"
-                    var rm = NetSpeed.Properties.Resources.ResourceManager;
-                    var rc = NetSpeed.Properties.Resources.Culture;
-                    string inLabel = rm.GetString("MainForm_In", rc) ?? "in";
-                    string outLabel = rm.GetString("MainForm_Out", rc) ?? "out";
+                    string inLabel = GetRes("MainForm_In", "in");
+                    string outLabel = GetRes("MainForm_Out", "out");
                     g.DrawString(received + " " + inLabel, font, brushText, pad + 4, pad + 2);
                     g.DrawString(sent + " " + outLabel, font, brushText, pad + 4, this.Height / 2 + 2);
 
@@ -387,27 +436,46 @@ namespace InterfaceTrafficWatch
                 dlSpeed = Math.Max(0, dlSpeed);
                 upSpeed = Math.Max(0, upSpeed);
 
-                using (Bitmap bmp = new Bitmap(16, 16))
-                using (Graphics g = Graphics.FromImage(bmp))
+                IntPtr hIcon = IntPtr.Zero;
+                Icon newIcon = null;
+                try
                 {
-                    g.Clear(Color.FromArgb(40, 40, 40));
-                    g.DrawRectangle(Pens.Black, 0, 0, 15, 15);
+                    using (Bitmap bmp = new Bitmap(16, 16))
+                    using (Graphics g = Graphics.FromImage(bmp))
+                    {
+                        g.Clear(Color.FromArgb(40, 40, 40));
+                        g.DrawRectangle(Pens.Black, 0, 0, 15, 15);
 
-                    int scaleDl = Math.Min(14, Math.Max(0, (int)(dlSpeed / Math.Max(1, maxDl) * 14)));
-                    int scaleUp = Math.Min(14, Math.Max(0, (int)(upSpeed / Math.Max(1, maxUp) * 14)));
+                        int scaleDl = Math.Min(14, Math.Max(0, (int)(dlSpeed / Math.Max(1, maxDl) * 14)));
+                        int scaleUp = Math.Min(14, Math.Max(0, (int)(upSpeed / Math.Max(1, maxUp) * 14)));
 
-                    if (scaleDl > 0)
-                        g.FillRectangle(brushDl, 2, 15 - scaleDl, 5, scaleDl);
-                    if (scaleUp > 0)
-                        g.FillRectangle(brushUp, 9, 15 - scaleUp, 5, scaleUp);
+                        if (scaleDl > 0)
+                            g.FillRectangle(brushDl, 2, 15 - scaleDl, 5, scaleDl);
+                        if (scaleUp > 0)
+                            g.FillRectangle(brushUp, 9, 15 - scaleUp, 5, scaleUp);
 
-                    notifyIcon1.Icon = Icon.FromHandle(bmp.GetHicon());
+                        hIcon = bmp.GetHicon();
+                        newIcon = Icon.FromHandle(hIcon);
+                        // Clone so we own the managed icon instance and can dispose it safely
+                        var cloned = (Icon)newIcon.Clone();
+                        var old = notifyIcon1.Icon;
+                        notifyIcon1.Icon = cloned;
+                        try { old?.Dispose(); } catch { }
+                        try { newIcon.Dispose(); } catch { }
+                    }
+                }
+                finally
+                {
+                    if (hIcon != IntPtr.Zero)
+                    {
+                        try { DestroyIcon(hIcon); } catch { }
+                    }
                 }
 
                 // Format speeds for display (convert from KiB/s to Kb/s/Mb/s as needed)
                 string dlText = FormatSpeed(dlSpeed);
                 string upText = FormatSpeed(upSpeed);
-                string trayFmt = NetSpeed.Properties.Resources.ResourceManager.GetString("MainForm_TrayFormat", NetSpeed.Properties.Resources.Culture) ?? "DL {0} UP {1}";
+                string trayFmt = GetRes("MainForm_TrayFormat", "DL {0} UP {1}");
                 string text = string.Format(trayFmt, dlText, upText);
                 if (text.Length > 63)
                     text = text.Substring(0, 63);
@@ -552,7 +620,6 @@ namespace InterfaceTrafficWatch
                 this.Top += e.Y - dragOffset.Y;
             }
         }
-
         private void MainForm_Resize(object sender, EventArgs e)
         {
             if (WindowState == FormWindowState.Minimized)
@@ -595,7 +662,18 @@ namespace InterfaceTrafficWatch
             catch (Exception ex)
             {
                 LogError("Setup", ex);
-                MessageBox.Show("Błąd otwierania ustawień:\n" + ex.Message);
+                try
+                {
+                    var rm = Properties.Resources.ResourceManager;
+                    var rc = Properties.Resources.Culture;
+                    var msg = rm.GetString("Msg_SetupError", rc) ?? "Error opening settings:\n";
+                    var title = rm.GetString("Title_Error", rc) ?? "Error";
+                    MessageBox.Show(msg + ex.Message, title, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                catch
+                {
+                    MessageBox.Show("Error opening settings:\n" + ex.Message);
+                }
             }
         }
 
@@ -623,13 +701,13 @@ namespace InterfaceTrafficWatch
                 {
                     Show();
                     hidden = false;
-                    Minimalizuj.Text = "Minimalizuj";
+                    try { Minimalizuj.Text = GetRes("Menu_Minimize", "Minimize"); } catch { Minimalizuj.Text = "Minimize"; }
                 }
                 else
                 {
                     Hide();
                     hidden = true;
-                    Minimalizuj.Text = "Pokaż";
+                    try { Minimalizuj.Text = GetRes("Menu_Show", "Show"); } catch { Minimalizuj.Text = "Show"; }
                 }
             }
             catch (Exception ex)
@@ -687,6 +765,7 @@ namespace InterfaceTrafficWatch
                 brushText?.Dispose();
                 font?.Dispose();
                 writeConfig();
+                Instance = null;
             }
             catch (Exception ex)
             {

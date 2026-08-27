@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Setup_Label_Interface"><value>Інтерфейс</value></data>
+  <data name="Setup_MaxDL"><value>Макс завантаження</value></data>
+  <data name="Setup_MaxUP"><value>Макс відправлення</value></data>
+  <data name="Setup_Units_KBs"><value>KB/s</value></data>
+  <data name="Setup_Refresh"><value>Оновлення</value></data>
+  <data name="Setup_ms"><value>мс</value></data>
+  <data name="Setup_OK"><value>OK</value></data>
+  <data name="Setup_Cancel"><value>Скасувати</value></data>
+  <data name="Setup_Title"><value>Налаштування NetSpeed</value></data>
+  <data name="Setup_Check_DisplayInBits"><value>Показувати в бітах (Kb/s)</value></data>
+  <data name="Setup_Label_Language"><value>Мова</value></data>
+  <data name="Menu_Minimize"><value>Згорнути</value></data>
+  <data name="Menu_Show"><value>Показати</value></data>
+  <data name="Menu_AlwaysOnTop"><value>Завжди зверху</value></data>
+  <data name="Menu_Config"><value>Налаштування</value></data>
+  <data name="Menu_About"><value>Про програму</value></data>
+  <data name="Menu_Exit"><value>Вихід</value></data>
+  <data name="Msg_InitError"><value>Помилка ініціалізації програми:\n</value></data>
+  <data name="Msg_SetupError"><value>Помилка відкриття налаштувань:\n</value></data>
+  <data name="Title_Error"><value>Помилка</value></data>
+  <data name="MainForm_Title"><value>Mathom NetSpeed</value></data>
+  <data name="MainForm_TrayFormat"><value>DL {0} UP {1}</value></data>
+  <data name="MainForm_In"><value>вхідний</value></data>
+  <data name="MainForm_Out"><value>вихідний</value></data>
+  <data name="Lang_English"><value>Англійська</value></data>
+  <data name="Lang_Polish"><value>Польська</value></data>
+  <data name="Lang_Chinese"><value>Китайська</value></data>
+  <data name="Lang_Japanese"><value>Японська</value></data>
+</root>

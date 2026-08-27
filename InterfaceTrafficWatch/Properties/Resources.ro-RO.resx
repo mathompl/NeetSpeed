@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Setup_Label_Interface"><value>Interfață</value></data>
+  <data name="Setup_MaxDL"><value>Max descărcare</value></data>
+  <data name="Setup_MaxUP"><value>Max încărcare</value></data>
+  <data name="Setup_Units_KBs"><value>KB/s</value></data>
+  <data name="Setup_Refresh"><value>Reîmprospătare</value></data>
+  <data name="Setup_ms"><value>ms</value></data>
+  <data name="Setup_OK"><value>OK</value></data>
+  <data name="Setup_Cancel"><value>Anulare</value></data>
+  <data name="Setup_Title"><value>Setări NetSpeed</value></data>
+  <data name="Setup_Check_DisplayInBits"><value>Afișează în biți (Kb/s)</value></data>
+  <data name="Setup_Label_Language"><value>Limbă</value></data>
+  <data name="Menu_Minimize"><value>Minimizează</value></data>
+  <data name="Menu_Show"><value>Afișează</value></data>
+  <data name="Menu_AlwaysOnTop"><value>Întotdeauna deasupra</value></data>
+  <data name="Menu_Config"><value>Config</value></data>
+  <data name="Menu_About"><value>Despre</value></data>
+  <data name="Menu_Exit"><value>Ieșire</value></data>
+  <data name="Msg_InitError"><value>Eroare la inițializarea aplicației:\n</value></data>
+  <data name="Msg_SetupError"><value>Eroare la deschiderea setărilor:\n</value></data>
+  <data name="Title_Error"><value>Eroare</value></data>
+  <data name="MainForm_Title"><value>Mathom NetSpeed</value></data>
+  <data name="MainForm_TrayFormat"><value>DL {0} UP {1}</value></data>
+  <data name="MainForm_In"><value>primit</value></data>
+  <data name="MainForm_Out"><value>trimis</value></data>
+  <data name="Lang_English"><value>Engleză</value></data>
+  <data name="Lang_Polish"><value>Poloneză</value></data>
+  <data name="Lang_Chinese"><value>Chineză</value></data>
+  <data name="Lang_Japanese"><value>Japoneză</value></data>
+</root>

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Setup_Label_Interface"><value>Διεπαφή</value></data>
+  <data name="Setup_MaxDL"><value>Μέγ. λήψη</value></data>
+  <data name="Setup_MaxUP"><value>Μέγ. αποστολή</value></data>
+  <data name="Setup_Units_KBs"><value>KB/s</value></data>
+  <data name="Setup_Refresh"><value>Ανανέωση</value></data>
+  <data name="Setup_ms"><value>ms</value></data>
+  <data name="Setup_OK"><value>OK</value></data>
+  <data name="Setup_Cancel"><value>Ακύρωση</value></data>
+  <data name="Setup_Title"><value>Ρυθμίσεις NetSpeed</value></data>
+  <data name="Setup_Check_DisplayInBits"><value>Εμφάνιση σε bits (Kb/s)</value></data>
+  <data name="Setup_Label_Language"><value>Γλώσσα</value></data>
+  <data name="Menu_Minimize"><value>Ελαχιστοποίηση</value></data>
+  <data name="Menu_Show"><value>Εμφάνιση</value></data>
+  <data name="Menu_AlwaysOnTop"><value>Πάντα πάνω</value></data>
+  <data name="Menu_Config"><value>Ρυθμίσεις</value></data>
+  <data name="Menu_About"><value>Σχετικά</value></data>
+  <data name="Menu_Exit"><value>Έξοδος</value></data>
+  <data name="Msg_InitError"><value>Σφάλμα εκκίνησης εφαρμογής:\n</value></data>
+  <data name="Msg_SetupError"><value>Σφάλμα κατά το άνοιγμα ρυθμίσεων:\n</value></data>
+  <data name="Title_Error"><value>Σφάλμα</value></data>
+  <data name="MainForm_Title"><value>Mathom NetSpeed</value></data>
+  <data name="MainForm_TrayFormat"><value>DL {0} UP {1}</value></data>
+  <data name="MainForm_In"><value>λήψη</value></data>
+  <data name="MainForm_Out"><value>αποστολή</value></data>
+  <data name="Lang_English"><value>Αγγλικά</value></data>
+  <data name="Lang_Polish"><value>Πολωνικά</value></data>
+  <data name="Lang_Chinese"><value>Κινέζικα</value></data>
+  <data name="Lang_Japanese"><value>Ιαπωνικά</value></data>
+</root>

@@ -116,7 +116,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Control;
-            this.BackgroundImage = global::NetSpeed.Properties.Resources.metal1;
+            this.BackgroundImage = global::InterfaceTrafficWatch.Properties.Resources.metal1;
             this.ClientSize = new System.Drawing.Size(215, 160);
             this.ContextMenuStrip = this.contextMenuStrip1;
             this.ControlBox = false;

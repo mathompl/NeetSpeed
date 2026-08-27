@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.Net.NetworkInformation;
+using Microsoft.Win32;
 
 namespace InterfaceTrafficWatch
 {
@@ -53,47 +54,97 @@ namespace InterfaceTrafficWatch
             // Localize UI texts
             try
             {
-                var rm = NetSpeed.Properties.Resources.ResourceManager;
-                var rc = NetSpeed.Properties.Resources.Culture;
-                lblInterface.Text = rm.GetString("Setup_Label_Interface", rc);
-                label1.Text = rm.GetString("Setup_MaxDL", rc);
-                label2.Text = rm.GetString("Setup_MaxUP", rc);
-                label3.Text = rm.GetString("Setup_Units_KBs", rc);
-                label5.Text = rm.GetString("Setup_Refresh", rc);
-                label6.Text = rm.GetString("Setup_ms", rc);
-                button1.Text = rm.GetString("Setup_OK", rc);
-                button2.Text = rm.GetString("Setup_Cancel", rc);
-                this.Text = rm.GetString("Setup_Title", rc);
-                chkDisplayInBits.Text = rm.GetString("Setup_Check_DisplayInBits", rc);
-                lblLanguage.Text = rm.GetString("Setup_Label_Language", rc);
+                // handle autostart: add or remove HKCU Run entry
+                try
+                {
+                    using (var key = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Run", true))
+                    {
+                        if (key != null)
+                        {
+                            var exe = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
+                            if (chkAutoStart.Checked)
+                                key.SetValue("NetSpeed", exe);
+                            else
+                                key.DeleteValue("NetSpeed", false);
+                        }
+                    }
+                }
+                catch { }
+
+                // use safe accessor
+                lblInterface.Text = SafeRes("Setup_Label_Interface", lblInterface.Text);
+                label1.Text = SafeRes("Setup_MaxDL", label1.Text);
+                label2.Text = SafeRes("Setup_MaxUP", label2.Text);
+                label3.Text = SafeRes("Setup_Units_KBs", label3.Text);
+                label5.Text = SafeRes("Setup_Refresh", label5.Text);
+                label6.Text = SafeRes("Setup_ms", label6.Text);
+                button1.Text = SafeRes("Setup_OK", button1.Text);
+                button2.Text = SafeRes("Setup_Cancel", button2.Text);
+                this.Text = SafeRes("Setup_Title", this.Text);
+                chkDisplayInBits.Text = SafeRes("Setup_Check_DisplayInBits", chkDisplayInBits.Text);
+                lblLanguage.Text = SafeRes("Setup_Label_Language", lblLanguage.Text);
             }
             catch { }
 
-            // Populate language selection
+            // Populate language selection with all available cultures we added
             try
             {
-                var langs = new System.Collections.Generic.Dictionary<string, string>
-                {
-                    { "pl-PL", "Polski" },
-                    { "en-US", "English" },
-                    { "de-DE", "Deutsch" },
-                    { "es-ES", "Español" },
-                    { "it-IT", "Italiano" }
+                var cultureCodes = new[] {
+                    "en-US","pl-PL","zh-CN","ja-JP","fr-FR","de-DE","it-IT","pt-PT","es-ES",
+                    "cs-CZ","ru-RU","uk-UA","ro-RO","sk-SK","el-GR"
                 };
+
+                var items = new List<KeyValuePair<string, string>>();
+                foreach (var code in cultureCodes)
+                {
+                    try
+                    {
+                        var ci = new System.Globalization.CultureInfo(code);
+                        // show native name for that culture
+                        items.Add(new KeyValuePair<string, string>(code, ci.NativeName));
+                    }
+                    catch
+                    {
+                        items.Add(new KeyValuePair<string, string>(code, code));
+                    }
+                }
+
                 cmbLanguage.DisplayMember = "Value";
                 cmbLanguage.ValueMember = "Key";
-                cmbLanguage.DataSource = new System.Windows.Forms.BindingSource(langs, null);
+                cmbLanguage.DataSource = new System.Windows.Forms.BindingSource(items, null);
 
-                string cur = null;
-                if (Application.UserAppDataRegistry.GetValue("UICulture") is string uc)
-                    cur = uc;
-                if (!string.IsNullOrEmpty(cur))
+                // select saved culture if present
+                try
                 {
-                    try { cmbLanguage.SelectedValue = cur; }
-                    catch { }
+                    var saved = Application.UserAppDataRegistry.GetValue("UICulture") as string;
+                    if (!string.IsNullOrEmpty(saved)) cmbLanguage.SelectedValue = saved;
                 }
-                // preview current selection when changed
+                catch { }
+
                 cmbLanguage.SelectedIndexChanged += cmbLanguage_SelectedIndexChanged;
+            }
+            catch { }
+
+            // Ensure interface list is populated after localization helper exists
+            try { InitializeNetworkInterface(); } catch { }
+
+            // safe resource helper for this form
+            string SafeRes(string key, string def)
+            {
+                try { return Properties.Resources.ResourceManager.GetString(key, Properties.Resources.Culture) ?? def; } catch { return def; }
+            }
+
+            // set chkAutoStart from registry
+            try
+            {
+                using (var key = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Run", false))
+                {
+                    if (key != null)
+                    {
+                        var val = key.GetValue("NetSpeed") as string;
+                        if (!string.IsNullOrEmpty(val)) chkAutoStart.Checked = true;
+                    }
+                }
             }
             catch { }
 
@@ -103,11 +154,12 @@ namespace InterfaceTrafficWatch
         private void button1_Click(object sender, EventArgs e)
         {
 
-            Application.UserAppDataRegistry.SetValue("Interface", cmbInterface.Items[cmbInterface.SelectedIndex].ToString ());
+            Application.UserAppDataRegistry.SetValue("Interface", cmbInterface.Items[cmbInterface.SelectedIndex].ToString());
             Application.UserAppDataRegistry.SetValue("MaxDL", System.Convert.ToInt32(textBox1.Text, 10));
             Application.UserAppDataRegistry.SetValue("MaxUP", System.Convert.ToInt32(textBox2.Text,10));
             Application.UserAppDataRegistry.SetValue("Timer", System.Convert.ToInt32(textBox3.Text,10));
             Application.UserAppDataRegistry.SetValue("DisplayInBits", chkDisplayInBits.Checked ? 1 : 0);
+            Application.UserAppDataRegistry.SetValue("AutoStart", chkAutoStart.Checked ? 1 : 0);
             try
             {
                 if (cmbLanguage.SelectedValue is string lang)
@@ -117,7 +169,7 @@ namespace InterfaceTrafficWatch
                     try
                     {
                         var ci = new System.Globalization.CultureInfo(lang);
-                        NetSpeed.Properties.Resources.Culture = ci;
+                        Properties.Resources.Culture = ci;
                         System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = ci;
                         System.Threading.Thread.CurrentThread.CurrentUICulture = ci;
                     }
@@ -146,7 +198,7 @@ namespace InterfaceTrafficWatch
                     try
                     {
                         var ci = new System.Globalization.CultureInfo(lang);
-                        NetSpeed.Properties.Resources.Culture = ci;
+                        Properties.Resources.Culture = ci;
                         System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = ci;
                         System.Threading.Thread.CurrentThread.CurrentUICulture = ci;
                     }
@@ -155,8 +207,8 @@ namespace InterfaceTrafficWatch
                     // Update UI texts in this Setup form to preview
                     try
                     {
-                        var rm = NetSpeed.Properties.Resources.ResourceManager;
-                        var rc = NetSpeed.Properties.Resources.Culture;
+                        var rm = Properties.Resources.ResourceManager;
+                        var rc = Properties.Resources.Culture;
                         lblInterface.Text = rm.GetString("Setup_Label_Interface", rc) ?? lblInterface.Text;
                         label1.Text = rm.GetString("Setup_MaxDL", rc) ?? label1.Text;
                         label2.Text = rm.GetString("Setup_MaxUP", rc) ?? label2.Text;

@@ -67,7 +67,7 @@
             // logoPictureBox
             // 
             this.logoPictureBox.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.logoPictureBox.Image = global::NetSpeed.Properties.Resources.IMG_4058_rawlr;
+            this.logoPictureBox.Image = global::InterfaceTrafficWatch.Properties.Resources.IMG_4058_rawlr;
             this.logoPictureBox.Location = new System.Drawing.Point(3, 3);
             this.logoPictureBox.Name = "logoPictureBox";
             this.tableLayoutPanel.SetRowSpan(this.logoPictureBox, 6);

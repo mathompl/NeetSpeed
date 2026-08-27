@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Setup_Label_Interface"><value>Rozhranie</value></data>
+  <data name="Setup_MaxDL"><value>Max sťahovanie</value></data>
+  <data name="Setup_MaxUP"><value>Max odosielanie</value></data>
+  <data name="Setup_Units_KBs"><value>KB/s</value></data>
+  <data name="Setup_Refresh"><value>Obnovenie</value></data>
+  <data name="Setup_ms"><value>ms</value></data>
+  <data name="Setup_OK"><value>OK</value></data>
+  <data name="Setup_Cancel"><value>Zrušiť</value></data>
+  <data name="Setup_Title"><value>Nastavenia NetSpeed</value></data>
+  <data name="Setup_Check_DisplayInBits"><value>Zobraziť v bitoch (Kb/s)</value></data>
+  <data name="Setup_Label_Language"><value>Jazyk</value></data>
+  <data name="Menu_Minimize"><value>Minimalizovať</value></data>
+  <data name="Menu_Show"><value>Zobraziť</value></data>
+  <data name="Menu_AlwaysOnTop"><value>Vždy navrchu</value></data>
+  <data name="Menu_Config"><value>Nastavenie</value></data>
+  <data name="Menu_About"><value>O programe</value></data>
+  <data name="Menu_Exit"><value>Ukončiť</value></data>
+  <data name="Msg_InitError"><value>Chyba inicializácie aplikácie:\n</value></data>
+  <data name="Msg_SetupError"><value>Chyba pri otváraní nastavení:\n</value></data>
+  <data name="Title_Error"><value>Chyba</value></data>
+  <data name="MainForm_Title"><value>Mathom NetSpeed</value></data>
+  <data name="MainForm_TrayFormat"><value>DL {0} UP {1}</value></data>
+  <data name="MainForm_In"><value>prijaté</value></data>
+  <data name="MainForm_Out"><value>odoslané</value></data>
+  <data name="Lang_English"><value>Angličtina</value></data>
+  <data name="Lang_Polish"><value>Poľština</value></data>
+  <data name="Lang_Chinese"><value>Čínština</value></data>
+  <data name="Lang_Japanese"><value>Japončina</value></data>
+</root>

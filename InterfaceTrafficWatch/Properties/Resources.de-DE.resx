@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Setup_Label_Interface"><value>Schnittstelle</value></data>
+  <data name="Setup_MaxDL"><value>Max. Download</value></data>
+  <data name="Setup_MaxUP"><value>Max. Upload</value></data>
+  <data name="Setup_Units_KBs"><value>KB/s</value></data>
+  <data name="Setup_Refresh"><value>Aktualisierung</value></data>
+  <data name="Setup_ms"><value>ms</value></data>
+  <data name="Setup_OK"><value>OK</value></data>
+  <data name="Setup_Cancel"><value>Abbrechen</value></data>
+  <data name="Setup_Title"><value>NetSpeed Einstellungen</value></data>
+  <data name="Setup_Check_DisplayInBits"><value>In Bits anzeigen (Kb/s)</value></data>
+  <data name="Setup_Label_Language"><value>Sprache</value></data>
+  <data name="Menu_Minimize"><value>Minimieren</value></data>
+  <data name="Menu_Show"><value>Anzeigen</value></data>
+  <data name="Menu_AlwaysOnTop"><value>Immer im Vordergrund</value></data>
+  <data name="Menu_Config"><value>Konfig</value></data>
+  <data name="Menu_About"><value>Über</value></data>
+  <data name="Menu_Exit"><value>Beenden</value></data>
+  <data name="Msg_InitError"><value>Fehler bei der Initialisierung der Anwendung:\n</value></data>
+  <data name="Msg_SetupError"><value>Fehler beim Öffnen der Einstellungen:\n</value></data>
+  <data name="Title_Error"><value>Fehler</value></data>
+  <data name="MainForm_Title"><value>Mathom NetSpeed</value></data>
+  <data name="MainForm_TrayFormat"><value>DL {0} UP {1}</value></data>
+  <data name="MainForm_In"><value>empfangen</value></data>
+  <data name="MainForm_Out"><value>gesendet</value></data>
+  <data name="Lang_English"><value>Englisch</value></data>
+  <data name="Lang_Polish"><value>Polnisch</value></data>
+  <data name="Lang_Chinese"><value>Chinesisch</value></data>
+  <data name="Lang_Japanese"><value>Japanisch</value></data>
+</root>
