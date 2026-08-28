@@ -1,9 +1,7 @@
-﻿using System;
+﻿using NetSpeed;
+using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Drawing.Text;
 using System.Net.NetworkInformation;
 using System.Windows.Forms;
 
@@ -11,615 +9,271 @@ namespace InterfaceTrafficWatch
 {
     public partial class MainForm : Form
     {
-        // Safe resource helpers
-        private string GetRes(string key, string fallback)
-        {
-            try
-            {
-                return Properties.Resources.ResourceManager.GetString(key, Properties.Resources.Culture) ?? fallback;
-            }
-            catch
-            {
-                return fallback;
-            }
-        }
-
-        private System.Drawing.Bitmap SafeGetBitmap(string name)
-        {
-            try
-            {
-                object obj = Properties.Resources.ResourceManager.GetObject(name, Properties.Resources.Culture);
-                return obj as System.Drawing.Bitmap;
-            }
-            catch { return null; }
-        }
-
-        [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
-        private static extern bool DestroyIcon(IntPtr hIcon);
-
-        // singleton reference used by Setup to notify about culture change
-        public static MainForm Instance { get; private set; }
-        private int timerUpdate = 500;
-        private NetworkInterface nic;
-        private int maxDl = 1000;
-        private int maxUp = 200;
-        private bool displayInBits = false; // false = bytes (KB/s), true = bits (Kb/s)
-
-        private System.Timers.Timer timer;
+        private Timer timer;
         private readonly List<int> dataIn = new List<int>();
         private readonly List<int> dataOut = new List<int>();
 
-        private Bitmap canvas;
-        private Image frameBackground;
+        private long bytesSentLast;
+        private long bytesReceivedLast;
+        private bool hasBaseline;
 
-        private readonly SolidBrush brushBg = new SolidBrush(Color.FromArgb(30, 30, 30));
-        private readonly SolidBrush brushUp = new SolidBrush(Color.FromArgb(220, 50, 50));
-        private readonly SolidBrush brushDl = new SolidBrush(Color.FromArgb(50, 200, 80));
-        private readonly SolidBrush brushText = new SolidBrush(Color.Yellow);
-        private readonly Font font = new Font("Consolas", 7f, FontStyle.Bold);
+        private Drawing drawing = new Drawing();
+        private Config config;
+        private bool topMost;
+        private Point pos;
+        private bool hidden;
 
-        private long bytesSentLast = 0;
-        private long bytesReceivedLast = 0;
-
-        private Point dragOffset;
-        private bool isDragging = false;
-        private bool hidden = false;
-        private bool topMostState = false;
+        private const int MaxSamples = 120;
+        private const int MaxSpeedKBs = 10 * 1024 * 1024; // 10 GB/s — odcinamy śmieci po wrapie
 
         public MainForm()
         {
-            try
-            {
-                InitializeComponent();
-                Instance = this;
-                this.DoubleBuffered = true;
-                this.FormBorderStyle = FormBorderStyle.None;
-                this.TransparencyKey = Color.FromArgb(255, 128, 128);
-                this.BackColor = Color.FromArgb(255, 128, 128);
-                this.BackgroundImageLayout = ImageLayout.None;
-
-                try
-                {
-                    frameBackground = this.BackgroundImage;
-                    // Localize menu and window title from resources (use safe accessor)
-                    try
-                    {
-                        this.Text = GetRes("MainForm_Title", this.Text);
-                        Minimalizuj.Text = GetRes("Menu_Minimize", Minimalizuj.Text);
-                        toolStripMenuItem1.Text = GetRes("Menu_AlwaysOnTop", toolStripMenuItem1.Text);
-                        toolStripMenuItem2.Text = GetRes("Menu_Config", toolStripMenuItem2.Text);
-                        toolStripMenuItem3.Text = GetRes("Menu_About", toolStripMenuItem3.Text);
-                        toolStripMenuItem4.Text = GetRes("Menu_Exit", toolStripMenuItem4.Text);
-                    }
-                    catch { }
-
-                    frameBackground = this.BackgroundImage;
-                    if (frameBackground == null)
-                        frameBackground = SafeGetBitmap("metal1");
-                }
-                catch
-                {
-                    frameBackground = this.BackgroundImage;
-                }
-
-                // register instance for runtime culture updates
-                Instance = this;
-
-                ReloadConfig();
+            InitializeComponent();
+            config = new Config(this);
+            ReloadConfig();
+            if (config.nic == null)
                 InitializeNetwork();
-                InitializeTimer();
 
-                if (this.Width > 0 && this.Height > 0)
-                {
-                    canvas = new Bitmap(this.Width, this.Height);
-                    this.BackgroundImage = canvas;
-                }
-            }
-            catch (Exception ex)
-            {
-                LogError("Konstruktor", ex);
-                try
-                {
-                    var rm = Properties.Resources.ResourceManager;
-                    var rc = Properties.Resources.Culture;
-                    var title = rm.GetString("Title_Error", rc) ?? "Error";
-                    var msg = rm.GetString("Msg_InitError", rc) ?? "Application initialization error:\n";
-                    MessageBox.Show(msg + ex.Message, title, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-                catch
-                {
-                    MessageBox.Show("Application initialization error:\n" + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            }
+            initWindows();
+            InitializeTimer();
         }
 
-        public void ApplyCulture(string culture = null)
+        private void initWindows()
         {
-            try
-            {
-                if (!string.IsNullOrEmpty(culture))
-                {
-                    try
-                    {
-                        var ci = new System.Globalization.CultureInfo(culture);
-                        Properties.Resources.Culture = ci;
-                        System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = ci;
-                        System.Threading.Thread.CurrentThread.CurrentUICulture = ci;
-                    }
-                    catch { }
-                }
-
-                var rm = Properties.Resources.ResourceManager;
-                var rc = Properties.Resources.Culture;
-
-                // Update menu texts and title
-                try
-                {
-                    this.Text = rm.GetString("MainForm_Title", rc) ?? this.Text;
-                    Minimalizuj.Text = rm.GetString("Menu_Minimize", rc) ?? Minimalizuj.Text;
-                    toolStripMenuItem1.Text = rm.GetString("Menu_AlwaysOnTop", rc) ?? toolStripMenuItem1.Text;
-                    toolStripMenuItem2.Text = rm.GetString("Menu_Config", rc) ?? toolStripMenuItem2.Text;
-                    toolStripMenuItem3.Text = rm.GetString("Menu_About", rc) ?? toolStripMenuItem3.Text;
-                    toolStripMenuItem4.Text = rm.GetString("Menu_Exit", rc) ?? toolStripMenuItem4.Text;
-                }
-                catch { }
-
-                // Force UI refresh
-                this.Invalidate();
-                this.Refresh();
-
-                // Notify other open forms (call OnCultureChanged if present)
-                foreach (System.Windows.Forms.Form f in System.Windows.Forms.Application.OpenForms)
-                {
-                    if (f == this) continue;
-                    try
-                    {
-                        var mi = f.GetType().GetMethod("OnCultureChanged", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
-                        mi?.Invoke(f, new object[] { });
-                    }
-                    catch { }
-                }
-            }
-            catch (Exception ex)
-            {
-                LogError("ApplyCulture", ex);
-            }
-        }
-
-        private void LogError(string context, Exception ex)
-        {
-            Debug.WriteLine("[" + DateTime.Now.ToString("HH:mm:ss") + "] " + context + ": " + ex.Message);
+            toolStripMenuItem5.Text = "Hide to tray";
+            this.FormBorderStyle = FormBorderStyle.None;
+            this.TransparencyKey = Color.FromArgb(255, 128, 128);
+            this.BackgroundImageLayout = ImageLayout.None;
+            this.Left = config.x;
+            this.Top = config.y;
         }
 
         public void ReloadConfig()
         {
             try
             {
-                var reg = Application.UserAppDataRegistry;
+                config.ReloadConfig();
+                this.Width = Math.Max(16, config.width);
+                this.Height = Math.Max(16, config.height);
 
-                if (reg.GetValue("X") is int x && reg.GetValue("Y") is int y)
+                if (timer != null)
                 {
-                    this.Left = x;
-                    this.Top = y;
+                    timer.Stop();
+                    timer.Tick -= timer_Tick;
+                    timer.Dispose();
+                    timer = null;
+                    InitializeTimer();
                 }
-
-                if (reg.GetValue("MaxDL") is int mdl) maxDl = Math.Max(1, mdl);
-                if (reg.GetValue("MaxUP") is int mup) maxUp = Math.Max(1, mup);
-                if (reg.GetValue("DisplayInBits") is int dib) displayInBits = dib != 0;
-
-
-                if (reg.GetValue("Timer") is int t)
-                {
-                    timerUpdate = Math.Max(200, t);
-                    if (timer != null)
-                    {
-                        timer.Stop();
-                        timer.Dispose();
-                        InitializeTimer();
-                    }
-                }
-
-                if (reg.GetValue("Interface") is string nicName && !string.IsNullOrWhiteSpace(nicName))
-                {
-                    foreach (var n in NetworkInterface.GetAllNetworkInterfaces())
-                    {
-                        if (n.Name == nicName)
-                        {
-                            nic = n;
-                            break;
-                        }
-                    }
-                }
-                // apply UI culture if saved
-                try
-                {
-                    if (reg.GetValue("UICulture") is string uc && !string.IsNullOrWhiteSpace(uc))
-                    {
-                        var ci = new System.Globalization.CultureInfo(uc);
-                        Properties.Resources.Culture = ci;
-                        System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = ci;
-                        System.Threading.Thread.CurrentThread.CurrentUICulture = ci;
-                        ApplyCulture(uc);
-                    }
-                }
-                catch { }
             }
             catch (Exception ex)
             {
-                LogError("ReloadConfig", ex);
+                DebugError("ReloadConfig", ex);
             }
         }
-
-        // ApplyCulture overload removed (use single implementation above)
 
         private void InitializeNetwork()
         {
             try
             {
-                if (nic != null && nic.OperationalStatus == OperationalStatus.Up)
+                NetworkInterface[] nics = NetworkInterface.GetAllNetworkInterfaces();
+                if (nics == null || nics.Length == 0)
+                {
+                    config.nic = null;
                     return;
+                }
 
-                NetworkInterface best = null;
-                long bestTraffic = -1;
-
-                foreach (var n in NetworkInterface.GetAllNetworkInterfaces())
+                foreach (NetworkInterface nic in nics)
                 {
-                    try
+                    if (nic.OperationalStatus == OperationalStatus.Up &&
+                        nic.NetworkInterfaceType != NetworkInterfaceType.Loopback &&
+                        nic.NetworkInterfaceType != NetworkInterfaceType.Tunnel)
                     {
-                        if (n.OperationalStatus != OperationalStatus.Up) continue;
-                        if (n.NetworkInterfaceType == NetworkInterfaceType.Loopback) continue;
-
-                        var stats = n.GetIPv4Statistics();
-                        long traffic = stats.BytesReceived + stats.BytesSent;
-
-                        if (traffic > bestTraffic)
-                        {
-                            bestTraffic = traffic;
-                            best = n;
-                        }
-                    }
-                    catch (NetworkInformationException) { }
-                    catch (Exception ex)
-                    {
-                        LogError("Sprawdzanie interfejsu " + n.Name, ex);
+                        config.nic = nic;
+                        ResetCounters();
+                        return;
                     }
                 }
 
-                nic = best;
-
-                if (nic == null)
-                {
-                    var all = NetworkInterface.GetAllNetworkInterfaces();
-                    if (all.Length > 0)
-                        nic = all[0];
-                }
+                config.nic = nics[0];
+                ResetCounters();
             }
             catch (Exception ex)
             {
-                LogError("InitializeNetwork", ex);
-                nic = null;
+                config.nic = null;
+                DebugError("InitializeNetwork", ex);
             }
+        }
+
+        private void ResetCounters()
+        {
+            bytesSentLast = 0;
+            bytesReceivedLast = 0;
+            hasBaseline = false;
         }
 
         private void InitializeTimer()
         {
+            int interval = 1000;
             try
             {
-                // Use System.Timers.Timer to decouple sampling from the UI message loop
-                if (timer != null)
-                {
-                    try { timer.Stop(); timer.Dispose(); } catch { }
-                }
-
-                timer = new System.Timers.Timer(timerUpdate);
-                timer.AutoReset = true;
-                timer.Elapsed += (s, e) =>
-                {
-                    try
-                    {
-                        // Marshal to UI thread for safe UI updates
-                        if (!this.IsDisposed && this.IsHandleCreated)
-                        {
-                            try { this.BeginInvoke((Action)(() => { try { UpdateNetworkInterface(); } catch (Exception ex) { LogError("Timer Tick", ex); } })); }
-                            catch { }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        LogError("Timer Elapsed", ex);
-                    }
-                };
-                timer.Start();
-            }
-            catch (Exception ex)
-            {
-                LogError("InitializeTimer", ex);
-            }
-        }
-
-        private void paintChart(Graphics g, Brush color, int x, int y, int width, int height, List<int> data)
-        {
-            try
-            {
-                if (data == null || data.Count < 2 || width <= 0 || height <= 0) return;
-
-                while (data.Count > width)
-                    data.RemoveAt(0);
-
-                int maxValue = 1;
-                foreach (var v in data)
-                    if (v > maxValue) maxValue = v;
-
-                float scale = (float)height / maxValue;
-
-                using (var pen = new Pen(color, 1.5f))
-                {
-                    for (int i = 1; i < data.Count; i++)
-                    {
-                        float x1 = x + width - (data.Count - i + 1);
-                        float y1 = y + height - data[i - 1] * scale;
-                        float x2 = x + width - (data.Count - i);
-                        float y2 = y + height - data[i] * scale;
-                        g.DrawLine(pen, x1, y1, x2, y2);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                LogError("paintChart", ex);
-            }
-        }
-
-        private void paintCharts(string sent, string received)
-        {
-            try
-            {
-                if (this.Width <= 0 || this.Height <= 0) return;
-
-                if (canvas == null || canvas.Width != this.Width || canvas.Height != this.Height)
-                {
-                    canvas?.Dispose();
-                    canvas = new Bitmap(this.Width, this.Height);
-                    this.BackgroundImage = canvas;
-                }
-
-                using (Graphics g = Graphics.FromImage(canvas))
-                {
-                    g.SmoothingMode = SmoothingMode.AntiAlias;
-                    g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
-
-                    if (frameBackground != null)
-                        g.DrawImage(frameBackground, 0, 0, this.Width, this.Height);
-                    else
-                        g.Clear(Color.FromArgb(255, 128, 128));
-
-                    int pad = 8;
-                    int innerW = this.Width - pad * 2;
-                    int innerH = this.Height - pad * 2;
-
-                    g.FillRectangle(brushBg, pad, pad, innerW, innerH);
-
-                    using (var gridPen = new Pen(Color.FromArgb(40, 40, 60), 1))
-                    {
-                        for (int i = pad + 4; i < this.Width - pad; i += 6)
-                            g.DrawLine(gridPen, i, pad + 2, i, this.Height - pad - 2);
-                        for (int k = pad + 4; k < this.Height - pad; k += 6)
-                            g.DrawLine(gridPen, pad + 2, k, this.Width - pad - 2, k);
-                    }
-
-                    g.DrawString(received + " in", font, brushText, pad + 4, pad + 2);
-                    // localize "in" / "out"
-                    string inLabel = GetRes("MainForm_In", "in");
-                    string outLabel = GetRes("MainForm_Out", "out");
-                    g.DrawString(received + " " + inLabel, font, brushText, pad + 4, pad + 2);
-                    g.DrawString(sent + " " + outLabel, font, brushText, pad + 4, this.Height / 2 + 2);
-
-                    using (var midPen = new Pen(Color.Gray, 1))
-                        g.DrawLine(midPen, pad, this.Height / 2, this.Width - pad, this.Height / 2);
-
-                    paintChart(g, brushDl, pad + 2, pad + 16, innerW - 4, this.Height / 2 - pad - 20, dataIn);
-                    paintChart(g, brushUp, pad + 2, this.Height / 2 + pad + 8, innerW - 4, this.Height / 2 - pad - 20, dataOut);
-                }
-
-                this.Invalidate();
-            }
-            catch (Exception ex)
-            {
-                LogError("paintCharts", ex);
-            }
-        }
-
-        private void paintTray(double dlSpeed, double upSpeed)
-        {
-            try
-            {
-                dlSpeed = Math.Max(0, dlSpeed);
-                upSpeed = Math.Max(0, upSpeed);
-
-                IntPtr hIcon = IntPtr.Zero;
-                Icon newIcon = null;
-                try
-                {
-                    using (Bitmap bmp = new Bitmap(16, 16))
-                    using (Graphics g = Graphics.FromImage(bmp))
-                    {
-                        g.Clear(Color.FromArgb(40, 40, 40));
-                        g.DrawRectangle(Pens.Black, 0, 0, 15, 15);
-
-                        int scaleDl = Math.Min(14, Math.Max(0, (int)(dlSpeed / Math.Max(1, maxDl) * 14)));
-                        int scaleUp = Math.Min(14, Math.Max(0, (int)(upSpeed / Math.Max(1, maxUp) * 14)));
-
-                        if (scaleDl > 0)
-                            g.FillRectangle(brushDl, 2, 15 - scaleDl, 5, scaleDl);
-                        if (scaleUp > 0)
-                            g.FillRectangle(brushUp, 9, 15 - scaleUp, 5, scaleUp);
-
-                        hIcon = bmp.GetHicon();
-                        newIcon = Icon.FromHandle(hIcon);
-                        // Clone so we own the managed icon instance and can dispose it safely
-                        var cloned = (Icon)newIcon.Clone();
-                        var old = notifyIcon1.Icon;
-                        notifyIcon1.Icon = cloned;
-                        try { old?.Dispose(); } catch { }
-                        try { newIcon.Dispose(); } catch { }
-                    }
-                }
-                finally
-                {
-                    if (hIcon != IntPtr.Zero)
-                    {
-                        try { DestroyIcon(hIcon); } catch { }
-                    }
-                }
-
-                // Format speeds for display (convert from KiB/s to Kb/s/Mb/s as needed)
-                string dlText = FormatSpeed(dlSpeed);
-                string upText = FormatSpeed(upSpeed);
-                string trayFmt = GetRes("MainForm_TrayFormat", "DL {0} UP {1}");
-                string text = string.Format(trayFmt, dlText, upText);
-                if (text.Length > 63)
-                    text = text.Substring(0, 63);
-
-                notifyIcon1.Text = text;
-            }
-            catch (Exception ex)
-            {
-                LogError("paintTray", ex);
-            }
-        }
-
-        private string FormatSpeed(double kibPerSec)
-        {
-            try
-            {
-                if (double.IsNaN(kibPerSec) || double.IsInfinity(kibPerSec))
-                    return "---";
-
-                if (displayInBits)
-                {
-                    // Convert KiB/s -> kilobits/s
-                    double kilobits = kibPerSec * 8.0;
-                    if (kilobits >= 1000.0)
-                    {
-                        double mb = kilobits / 1000.0;
-                        return string.Format("{0:F1} Mb/s", mb);
-                    }
-                    else
-                    {
-                        return string.Format("{0:F0} Kb/s", kilobits);
-                    }
-                }
-                else
-                {
-                    // Show in bytes: KB/s or MB/s (using 1024)
-                    if (kibPerSec >= 1024.0)
-                    {
-                        double mb = kibPerSec / 1024.0;
-                        return string.Format("{0:F1} MB/s", mb);
-                    }
-                    else
-                    {
-                        return string.Format("{0:F0} KB/s", kibPerSec);
-                    }
-                }
+                interval = (int)config.timerUpdate;
             }
             catch
             {
-                return "---";
+                interval = 1000;
             }
+
+            if (interval < 100)
+                interval = 100;
+            if (interval > 60000)
+                interval = 60000;
+
+            timer = new Timer();
+            timer.Interval = interval;
+            timer.Tick += timer_Tick;
+            timer.Start();
         }
 
         private void UpdateNetworkInterface()
         {
             try
             {
-                if (nic == null || nic.OperationalStatus != OperationalStatus.Up)
+                if (config == null)
+                    return;
+
+                if (config.nic == null)
                 {
                     InitializeNetwork();
-                    if (nic == null)
-                    {
-                        paintCharts("---", "---");
+                    if (config.nic == null)
                         return;
-                    }
                 }
 
                 IPv4InterfaceStatistics stats;
                 try
                 {
-                    stats = nic.GetIPv4Statistics();
+                    stats = config.nic.GetIPv4Statistics();
                 }
                 catch (NetworkInformationException)
                 {
-                    nic = null;
-                    bytesSentLast = 0;
-                    bytesReceivedLast = 0;
                     InitializeNetwork();
                     return;
                 }
 
+                if (stats == null)
+                    return;
+
                 long bytesSent = stats.BytesSent;
                 long bytesReceived = stats.BytesReceived;
 
-                bool reset =
-                    bytesSentLast == 0 ||
-                    bytesReceivedLast == 0 ||
-                    bytesSent < bytesSentLast ||
-                    bytesReceived < bytesReceivedLast ||
-                    (bytesSent - bytesSentLast) > 100L * 1024 * 1024 ||
-                    (bytesReceived - bytesReceivedLast) > 500L * 1024 * 1024;
-
-                if (reset)
+                if (!hasBaseline)
                 {
                     bytesSentLast = bytesSent;
                     bytesReceivedLast = bytesReceived;
+                    hasBaseline = true;
                     return;
                 }
 
-                double factor = 1000.0 / Math.Max(1, timerUpdate);
-                double bytesSentSpeed = Math.Max(0, (bytesSent - bytesSentLast) / 1024.0 * factor);
-                double bytesReceivedSpeed = Math.Max(0, (bytesReceived - bytesReceivedLast) / 1024.0 * factor);
-
-                if (bytesSentSpeed > 200000) bytesSentSpeed = 0;
-                if (bytesReceivedSpeed > 200000) bytesReceivedSpeed = 0;
-
-                dataIn.Add((int)bytesReceivedSpeed);
-                dataOut.Add((int)bytesSentSpeed);
-
-                // Prepare human-friendly strings for chart/tray (switch to Mb/s when large)
-                string sent = FormatSpeed(bytesSentSpeed);
-                string received = FormatSpeed(bytesReceivedSpeed);
-
-                paintTray(bytesReceivedSpeed, bytesSentSpeed);
-                paintCharts(sent, received);
+                long sentDelta = CounterDelta(bytesSentLast, bytesSent);
+                long recvDelta = CounterDelta(bytesReceivedLast, bytesReceived);
 
                 bytesSentLast = bytesSent;
                 bytesReceivedLast = bytesReceived;
+
+                int deltaMs = timer != null ? timer.Interval : 1000;
+                if (deltaMs <= 0)
+                    deltaMs = 1000;
+
+                double bytesSentSpeed = sentDelta / 1024.0 * (1000.0 / deltaMs);
+                double bytesReceivedSpeed = recvDelta / 1024.0 * (1000.0 / deltaMs);
+
+                bytesSentSpeed = ClampSpeed(bytesSentSpeed);
+                bytesReceivedSpeed = ClampSpeed(bytesReceivedSpeed);
+
+                AddSample(dataIn, (int)Math.Round(bytesReceivedSpeed));
+                AddSample(dataOut, (int)Math.Round(bytesSentSpeed));
+
+                drawing.paintAll(
+                    bytesReceivedSpeed,
+                    GetAvg(dataIn),
+                    bytesSentSpeed,
+                    GetAvg(dataOut),
+                    this,
+                    notifyIcon1,
+                    config,
+                    dataIn,
+                    dataOut);
+
+                Invalidate();
             }
             catch (Exception ex)
             {
-                LogError("UpdateNetworkInterface", ex);
-                bytesSentLast = 0;
-                bytesReceivedLast = 0;
+                DebugError("UpdateNetworkInterface", ex);
             }
         }
 
-        private void MainForm_MouseDown(object sender, MouseEventArgs e)
+        /// <summary>
+        /// Różnica licznika z obsługą zawinięcia (32-bit i 64-bit).
+        /// Przy podejrzanym skoku resetujemy bazę zamiast pokazywać kosmos.
+        /// </summary>
+        private static long CounterDelta(long last, long current)
         {
-            if (e.Button == MouseButtons.Left)
+            if (current >= last)
+                return current - last;
+
+            const long Max32 = uint.MaxValue;
+            if (last <= Max32 && current >= 0)
             {
-                isDragging = true;
-                dragOffset = e.Location;
+                long wrapped = (Max32 - last) + current + 1;
+                if (wrapped >= 0 && wrapped <= Max32)
+                    return wrapped;
             }
+
+            return 0;
         }
 
-        private void MainForm_MouseMove(object sender, MouseEventArgs e)
+        private static double ClampSpeed(double kbPerSec)
         {
-            if (isDragging && e.Button == MouseButtons.Left)
-            {
-                this.Left += e.X - dragOffset.X;
-                this.Top += e.Y - dragOffset.Y;
-            }
+            if (double.IsNaN(kbPerSec) || double.IsInfinity(kbPerSec) || kbPerSec < 0)
+                return 0;
+            if (kbPerSec > MaxSpeedKBs)
+                return 0;
+            return kbPerSec;
         }
+
+        private static void AddSample(List<int> data, int value)
+        {
+            if (value < 0)
+                value = 0;
+            if (value > int.MaxValue)
+                value = int.MaxValue;
+
+            data.Add(value);
+            while (data.Count > MaxSamples)
+                data.RemoveAt(0);
+        }
+
+        private static int GetAvg(IList<int> data)
+        {
+            if (data == null || data.Count == 0)
+                return 0;
+
+            long sum = 0;
+            for (int i = 0; i < data.Count; i++)
+                sum += data[i];
+
+            long avg = sum / data.Count;
+            if (avg > int.MaxValue)
+                return int.MaxValue;
+            if (avg < 0)
+                return 0;
+            return (int)avg;
+        }
+
+        private void timer_Tick(object sender, EventArgs e)
+        {
+            UpdateNetworkInterface();
+        }
+
         private void MainForm_Resize(object sender, EventArgs e)
         {
             if (WindowState == FormWindowState.Minimized)
@@ -628,91 +282,95 @@ namespace InterfaceTrafficWatch
 
         private void notifyIcon1_MouseDoubleClick(object sender, MouseEventArgs e)
         {
-            Minimalizuj_Click(sender, e);
+            Minimize();
         }
 
         private void toolStripMenuItem4_Click(object sender, EventArgs e)
         {
             try
             {
-                writeConfig();
-                Application.Exit();
+                if (timer != null)
+                {
+                    timer.Stop();
+                    timer.Dispose();
+                    timer = null;
+                }
+                config.writeConfig();
             }
             catch (Exception ex)
             {
-                LogError("Wyjście", ex);
-                Application.Exit();
+                DebugError("Exit", ex);
             }
+            Application.Exit();
         }
 
         private void toolStripMenuItem2_Click(object sender, EventArgs e)
         {
             try
             {
-                writeConfig();
-                using (var setup = new Setup())
-                {
-                    setup.ShowDialog();
-                }
+                Setup setup = new Setup(config);
+                config.writeConfig();
+                setup.ShowDialog();
                 ReloadConfig();
-                InitializeNetwork();
-                bytesSentLast = 0;
-                bytesReceivedLast = 0;
+                ResetCounters();
             }
             catch (Exception ex)
             {
-                LogError("Setup", ex);
-                try
-                {
-                    var rm = Properties.Resources.ResourceManager;
-                    var rc = Properties.Resources.Culture;
-                    var msg = rm.GetString("Msg_SetupError", rc) ?? "Error opening settings:\n";
-                    var title = rm.GetString("Title_Error", rc) ?? "Error";
-                    MessageBox.Show(msg + ex.Message, title, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-                catch
-                {
-                    MessageBox.Show("Error opening settings:\n" + ex.Message);
-                }
+                DebugError("Setup", ex);
             }
         }
 
-        private void toolStripMenuItem1_Click(object sender, EventArgs e)
+        private void SetTopMost()
         {
-            try
+            if (topMost)
             {
-                topMostState = !topMostState;
-                this.TopMost = topMostState;
-                toolStripMenuItem1.Checked = topMostState;
-                toolStripMenuItem1.Font = new Font(toolStripMenuItem1.Font,
-                    topMostState ? FontStyle.Bold : FontStyle.Regular);
+                TopMost = false;
+                toolStripMenuItem6.Font = new Font(toolStripMenuItem1.Font, FontStyle.Regular);
+                toolStripMenuItem6.Checked = false;
             }
-            catch (Exception ex)
-            {
-                LogError("TopMost", ex);
-            }
-        }
-
-        private void Minimalizuj_Click(object sender, EventArgs e)
-        {
-            try
+            else
             {
                 if (hidden)
-                {
-                    Show();
-                    hidden = false;
-                    try { Minimalizuj.Text = GetRes("Menu_Minimize", "Minimize"); } catch { Minimalizuj.Text = "Minimize"; }
-                }
-                else
-                {
-                    Hide();
-                    hidden = true;
-                    try { Minimalizuj.Text = GetRes("Menu_Show", "Show"); } catch { Minimalizuj.Text = "Show"; }
-                }
+                    Minimize();
+                TopMost = true;
+                toolStripMenuItem6.Font = new Font(toolStripMenuItem1.Font, FontStyle.Bold);
+                toolStripMenuItem6.Checked = true;
+                this.Focus();
             }
-            catch (Exception ex)
+            topMost = TopMost;
+        }
+
+        private void toolStripMenuItem1_MouseDown(object sender, MouseEventArgs e)
+        {
+            pos = e.Location;
+        }
+
+        private void toolStripMenuItem1_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
             {
-                LogError("Minimalizuj", ex);
+                this.Left += (e.X - pos.X);
+                this.Top += (e.Y - pos.Y);
+            }
+        }
+
+        private void Minimize()
+        {
+            if (topMost)
+                SetTopMost();
+
+            if (hidden)
+            {
+                Show();
+                hidden = false;
+                toolStripMenuItem5.Text = "Hide to tray";
+                this.Focus();
+            }
+            else
+            {
+                Hide();
+                hidden = true;
+                toolStripMenuItem5.Text = "Maximize";
             }
         }
 
@@ -720,76 +378,53 @@ namespace InterfaceTrafficWatch
         {
             try
             {
-                using (var about = new AboutBox1())
-                {
-                    about.ShowDialog(this);
-                }
+                using (AboutBox1 box = new AboutBox1())
+                    box.ShowDialog();
             }
             catch (Exception ex)
             {
-                LogError("About", ex);
+                DebugError("About", ex);
             }
         }
 
-        private void writeConfig()
+        private void notifyIcon1_Click(object sender, EventArgs e)
         {
-            try
-            {
-                var reg = Application.UserAppDataRegistry;
-                reg.SetValue("X", this.Left);
-                reg.SetValue("Y", this.Top);
-                reg.SetValue("Minimized", hidden);
-                reg.SetValue("MaxDL", maxDl);
-                reg.SetValue("MaxUP", maxUp);
-                reg.SetValue("Timer", timerUpdate);
-
-                if (nic != null)
-                    reg.SetValue("Interface", nic.Name);
-            }
-            catch (Exception ex)
-            {
-                LogError("writeConfig", ex);
-            }
+            this.Focus();
         }
 
-        protected override void OnFormClosing(FormClosingEventArgs e)
+        private void toolStripMenuItem9_Click(object sender, EventArgs e)
         {
-            try
-            {
-                timer?.Stop();
-                timer?.Dispose();
-                canvas?.Dispose();
-                brushBg?.Dispose();
-                brushUp?.Dispose();
-                brushDl?.Dispose();
-                brushText?.Dispose();
-                font?.Dispose();
-                writeConfig();
-                Instance = null;
-            }
-            catch (Exception ex)
-            {
-                LogError("OnFormClosing", ex);
-            }
-            base.OnFormClosing(e);
-
+            toolStripMenuItem4_Click(sender, e);
         }
 
-        // ===== puste metody pod stary Designer =====
-        private void MainForm_Load(object sender, EventArgs e) { }
-        private void MainForm_Paint(object sender, PaintEventArgs e) { }
-        private void MainForm_Leave(object sender, EventArgs e) { }
-        private void MainForm_MouseClick(object sender, MouseEventArgs e) { }
-        private void notifyIcon1_MouseClick(object sender, MouseEventArgs e) { }
-
-        private void toolStripMenuItem1_MouseDown(object sender, MouseEventArgs e)
+        private void toolStripMenuItem6_Click(object sender, EventArgs e)
         {
-            MainForm_MouseDown(this, e);
+            SetTopMost();
         }
 
-        private void toolStripMenuItem1_MouseMove(object sender, MouseEventArgs e)
+        private void toolStripMenuItem5_Click(object sender, EventArgs e)
         {
-            MainForm_MouseMove(this, e);
+            Minimize();
+        }
+
+        private void toolStripMenuItem7_Click(object sender, EventArgs e)
+        {
+            toolStripMenuItem2_Click(sender, e);
+        }
+
+        private void toolStripMenuItem8_Click(object sender, EventArgs e)
+        {
+            toolStripMenuItem3_Click(sender, e);
+        }
+
+        private void notifyIcon1_MouseClick(object sender, MouseEventArgs e)
+        {
+            Minimize();
+        }
+
+        private static void DebugError(string where, Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(where + ": " + ex);
         }
     }
 }

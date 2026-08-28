@@ -1,0 +1,255 @@
+﻿using System;
+using System.Net.NetworkInformation;
+using System.Windows.Forms;
+using System.Drawing;
+using System.Collections;
+using System.Runtime.InteropServices;
+using NetSpeed;
+
+namespace InterfaceTrafficWatch
+{
+    public partial class MainForm : Form
+    {
+
+        private Timer timer;
+        ArrayList dataIn;
+        ArrayList dataOut;
+        double bytesSentLast = 0;
+        double bytesreceivedLast = 0;
+      
+        int lastTime;
+        Drawing drawing = new Drawing();
+        Config config;
+        Boolean topMost = false;
+        Point pos;
+        Boolean hidden = false;
+
+        public MainForm()
+        {
+             InitializeComponent();
+             config = new Config (this);
+             ReloadConfig();
+             if (config.nic==null)  InitializeNetwork();                       
+             dataIn = new ArrayList();
+             dataOut = new ArrayList();
+             initWindows();
+             InitializeTimer();
+        }
+
+        private void initWindows()
+        {
+            toolStripMenuItem5.Text = "Hide to tray";
+            this.FormBorderStyle = FormBorderStyle.None;
+            this.TransparencyKey = System.Drawing.Color.FromArgb(((System.Byte)(255)), ((System.Byte)(128)), ((System.Byte)(128)));
+            this.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
+            if (config.x != null && config.y != null)
+            {
+                this.Left = config.x;
+                this.Top = config.y;
+            }
+
+        }
+
+        public void ReloadConfig()
+        {
+            config.ReloadConfig();
+            if (timer != null)
+            {
+                timer.Stop();
+                timer.Dispose();
+                InitializeTimer();
+            }
+            this.Width = config.width;
+            this.Height = config.height;
+        }
+  
+
+
+        private void InitializeNetwork ()
+        {
+            config.nic = NetworkInterface.GetAllNetworkInterfaces()[0];
+        }
+
+        private void InitializeTimer()
+        {
+            timer = new Timer();
+            timer.Interval = (int)config.timerUpdate;
+            timer.Tick += new EventHandler(timer_Tick);
+            timer.Start();
+        }
+
+
+        private void UpdateNetworkInterface()
+        {
+            int time = lastTime = System.Environment.TickCount;
+            IPv4InterfaceStatistics interfaceStats = config.nic.GetIPv4Statistics();
+            double bytesSent = interfaceStats.BytesSent;
+            double bytesReceived = interfaceStats.BytesReceived;
+            if (bytesSentLast == 0) bytesSentLast = bytesSent;
+            if (bytesreceivedLast == 0) bytesreceivedLast = bytesReceived;
+            int delta = config.timerUpdate;
+            
+            double bytesSentSpeed = (double)(bytesSent - bytesSentLast) / 1024 * (1000 / delta);
+            double bytesReceivedSpeed = (double)(bytesReceived - bytesreceivedLast) / 1024 * (1000 / delta);
+            interfaceStats = null;
+            lastTime = System.Environment.TickCount;
+            String text = "";
+            dataIn.Add((int)bytesReceivedSpeed);
+            dataOut.Add((int)bytesSentSpeed);                    
+            drawing.paintAll(bytesReceivedSpeed, GetAvg(dataIn), bytesSentSpeed, GetAvg(dataOut), this, notifyIcon1,config,dataIn, dataOut);
+            Invalidate();
+            bytesSentLast = bytesSent;
+            bytesreceivedLast = bytesReceived;
+        }
+
+        private Int32 GetAvg (ArrayList data)
+        {
+            int avg = 0;
+            for (int i = 0 ; i < data.Count; i++)
+            {
+                avg+=(int)data[i];
+            }
+            return avg/data.Count;
+
+        }
+            
+        void timer_Tick(object sender, EventArgs e)
+        {
+            UpdateNetworkInterface();
+        }
+
+
+        private void MainForm_Resize(object sender, EventArgs e)
+        {
+            if (FormWindowState.Minimized == WindowState)
+                Hide();
+
+        }
+
+        private void notifyIcon1_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            Minimize();
+        }
+
+
+        private void toolStripMenuItem4_Click(object sender, EventArgs e)
+        {
+            config.writeConfig();
+            Application.Exit();
+        }
+
+        private void toolStripMenuItem2_Click(object sender, EventArgs e)
+        {
+            Setup  setup = new Setup (config);
+            config.writeConfig();
+            setup.ShowDialog();
+            ReloadConfig();
+            
+            
+
+        }
+
+
+        private void SetTopMost()
+        {
+            if (topMost)
+            {
+                TopMost = false;
+                toolStripMenuItem6.Font = new Font(toolStripMenuItem1.Font, FontStyle.Regular);
+                toolStripMenuItem6.Checked = false;
+            }
+            else
+            {
+                if (hidden) Minimize();
+                TopMost = true;
+                toolStripMenuItem6.Font = new Font(toolStripMenuItem1.Font, FontStyle.Bold);
+                toolStripMenuItem6.Checked = true;
+                this.Focus();
+
+            }
+            topMost = TopMost;
+        }
+    
+        private void toolStripMenuItem1_MouseDown(object sender, MouseEventArgs e)
+        {
+            pos = e.Location;
+        }
+
+        private void toolStripMenuItem1_MouseMove(object sender, MouseEventArgs e)
+        {
+           if (e.Button == MouseButtons.Left && pos!=null)
+            {
+                this.Left += (e.X - pos.X);
+
+                
+                this.Top += (e.Y - pos.Y);
+            }
+        }
+
+
+
+        private void Minimize ()
+        {
+            if (topMost) SetTopMost();
+            if (hidden)
+            {
+                Show();
+                hidden = false;
+                toolStripMenuItem5.Text = "Hide to tray";
+                this.Focus();
+            }
+            else
+            {
+                Hide();
+                hidden = true;
+                toolStripMenuItem5.Text = "Maximize";
+            }
+        }
+
+  
+
+        private void toolStripMenuItem3_Click(object sender, EventArgs e)
+        {
+            new AboutBox1().ShowDialog();
+        }
+
+
+
+        private void notifyIcon1_Click(object sender, EventArgs e)
+        {
+            this.Focus();
+        }
+
+        private void toolStripMenuItem9_Click(object sender, EventArgs e)
+        {
+            toolStripMenuItem4_Click(sender, e);
+        }
+
+        private void toolStripMenuItem6_Click(object sender, EventArgs e)
+        {
+            SetTopMost();
+        }
+
+        private void toolStripMenuItem5_Click(object sender, EventArgs e)
+        {
+            Minimize();
+        }
+
+        private void toolStripMenuItem7_Click(object sender, EventArgs e)
+        {
+            toolStripMenuItem2_Click(sender, e);
+        }
+
+        private void toolStripMenuItem8_Click(object sender, EventArgs e)
+        {
+            toolStripMenuItem3_Click(sender, e);
+        }
+
+        private void notifyIcon1_MouseClick(object sender, MouseEventArgs e)
+        {
+            Minimize();
+        }
+
+
+    }
+}

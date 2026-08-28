@@ -1,11 +1,12 @@
-﻿using Microsoft.Win32;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Drawing;
+
 using System.Reflection;
 using System.Windows.Forms;
+using System.Diagnostics;
+using Microsoft.Win32;
 
 namespace InterfaceTrafficWatch
 {
@@ -120,81 +121,76 @@ namespace InterfaceTrafficWatch
         private void tableLayoutPanel_MouseClick(object sender, MouseEventArgs e)
         {
             String url = "https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=XW55VW3AKNPRL&lc=US&item_name=NETSPEED&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHosted";
-            string defaultBrowserPath = GetDefaultBrowserPath();
+        string defaultBrowserPath = GetDefaultBrowserPath();
 
-            try
+try
 
-            {
+{
 
-                // launch default browser
+// launch default browser
 
-                Process.Start(defaultBrowserPath, url);
+Process.Start(defaultBrowserPath, url);
 
-            }
+}
 
-            catch (Exception exp)
+catch (Exception exp)
 
-            {
+{
 
-                MessageBox.Show(exp.Message);
+MessageBox.Show(exp.Message);
 
-            }
+}
         }
 
 
 
 
 
-        /// <summary>
+/// <summary>
 
-        /// Reads path of default browser from registry
+/// Reads path of default browser from registry
 
-        /// </summary>
+/// </summary>
 
-        /// <returns></returns>
+/// <returns></returns>
 
-        private static string GetDefaultBrowserPath()
+private static string GetDefaultBrowserPath()
 
-        {
+{
 
-            string key = @"htmlfile\shell\open\command";
+string key = @"htmlfile\shell\open\command";
 
-            RegistryKey registryKey =
+RegistryKey registryKey =
 
-            Registry.ClassesRoot.OpenSubKey(key, false);
+Registry.ClassesRoot.OpenSubKey(key, false);
 
-            // get default browser path
+// get default browser path
 
-            return ((string)registryKey.GetValue(null, null)).Split('"')[1];
+return ((string) registryKey.GetValue(null, null)).Split('"')[1];
 
-        }
+}
 
-        private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
-        {
-            String url = "https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=XW55VW3AKNPRL&lc=US&item_name=NETSPEED&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHosted";
-            string defaultBrowserPath = GetDefaultBrowserPath();
+private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+{
+    String url = "https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=XW55VW3AKNPRL&lc=US&item_name=NETSPEED&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHosted";
+    string defaultBrowserPath = GetDefaultBrowserPath();
 
-            try
-            {
+    try
+    {
 
-                // launch default browser
+        // launch default browser
 
-                Process.Start(defaultBrowserPath, url);
+        Process.Start(defaultBrowserPath, url);
 
-            }
+    }
 
-            catch (Exception exp)
-            {
+    catch (Exception exp)
+    {
 
-                MessageBox.Show(exp.Message);
+        MessageBox.Show(exp.Message);
 
-            }
-        }
-
-        private void labelVersion_Click(object sender, EventArgs e)
-        {
-
-        }
+    }
+}
 
 
 

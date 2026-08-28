@@ -1,0 +1,223 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Drawing;
+using System.Runtime.InteropServices;
+using System.Windows.Forms;
+using System.Collections;
+
+namespace NetSpeed
+{
+
+
+
+    class Drawing
+    {
+        System.Drawing.SolidBrush drawBrushBG;
+        System.Drawing.SolidBrush drawBrushBlack;
+        System.Drawing.SolidBrush drawBrushBlue;
+        System.Drawing.SolidBrush drawBrushUP;
+        System.Drawing.SolidBrush drawBrushDL;
+        System.Drawing.SolidBrush drawBrushYellow;
+        System.Drawing.SolidBrush drawBrushAvg;
+        Font font = new Font("Console", 6);
+        Font fontsm = new Font("Console", 5);
+        Form form;
+        NotifyIcon icon;
+        Boolean paintAvg;
+        Config config;
+        ArrayList dataIn;
+        ArrayList dataOut;
+
+        public void paintAll(double bytesReceivedSpeed, int avgIn, double bytesSentSpeed, int avgOut, Form form, NotifyIcon notifyIcon1, Config config,ArrayList dataIn, ArrayList dataOut)
+        {
+            this.form = form;
+            this.icon = notifyIcon1;
+            this.paintAvg = paintAvg;
+            this.config = config;
+            this.dataIn = dataIn;
+            this.dataOut = dataOut;
+            initBrushes();
+            paintTray(bytesReceivedSpeed, avgIn, bytesSentSpeed, avgOut);
+            paintCharts(bytesReceivedSpeed, avgIn, bytesSentSpeed, avgOut);
+            disposeBrushes();
+
+        }
+
+        public void initBrushes()
+        {
+            drawBrushBG = new System.Drawing.SolidBrush(System.Drawing.Color.Gray);
+            drawBrushBlack = new System.Drawing.SolidBrush(System.Drawing.Color.Black);
+            drawBrushBlue = new System.Drawing.SolidBrush(System.Drawing.Color.DarkBlue);
+            drawBrushAvg = new System.Drawing.SolidBrush(System.Drawing.Color.DarkBlue);
+            drawBrushUP = new System.Drawing.SolidBrush(System.Drawing.Color.Red);
+            drawBrushDL = new System.Drawing.SolidBrush(System.Drawing.Color.Green);
+            drawBrushYellow = new System.Drawing.SolidBrush(System.Drawing.Color.Yellow);
+
+        }
+
+        public void disposeBrushes()
+        {
+            drawBrushBG.Dispose();
+            drawBrushBlack.Dispose();
+            drawBrushBlue.Dispose();
+            drawBrushUP.Dispose();
+            drawBrushDL.Dispose();
+            drawBrushYellow.Dispose();
+
+        }
+
+
+
+        public void paintChart(String stream, System.Drawing.Graphics c, System.Drawing.SolidBrush color, int x, int y, int samples, int height, ArrayList data, String speed)
+        {
+            if (data.Count > samples)
+            {
+                data.RemoveRange(0, data.Count - samples);
+                data.TrimToSize();
+
+            }
+            int max = 0;
+            int avg = 0;
+
+            for (int i = 0; i < data.Count; i++)
+            {
+                if ((int)data[i] > max) max = (int)data[i];
+                avg += (int)data[i];
+            }
+            avg = avg / data.Count;
+
+
+
+            int margin = 0;
+            int paintheight = height - margin;
+            if (paintheight == 0) paintheight = height;
+            if (max == 0) max = paintheight;
+            double scale = (double)paintheight / (double)max;
+            String avgstr = "avg " + avg + " KB/s";
+            int len = avgstr.Length * 3 + 12;
+
+            int avgy = (int)y - (int)((double)avg * (double)scale) + paintheight;
+
+            if (config.paintAvg) c.DrawLine(new Pen(drawBrushAvg), x, avgy, samples + x, avgy);
+
+            for (int i = 2; i < data.Count; i++)
+            {
+                int lastY = (int)((int)data[i - 1] * (double)scale);
+                int nowY = (int)((int)data[i] * (double)scale);
+
+                c.DrawLine(new Pen(color), samples + x - i, y - lastY + paintheight, samples + x - i - 1, y - nowY + paintheight);
+            }
+
+            c.DrawString(max + "", fontsm, drawBrushYellow, samples - 20, y);
+            c.DrawString((max / 2) + "", fontsm, drawBrushYellow, samples - 20, y + (paintheight / 2));
+            c.DrawString("KB/s", fontsm, drawBrushYellow, samples - 10, y + (paintheight / 4));
+            c.DrawString(speed + " " + stream + " (avg " + avg + " KB/s)", font, drawBrushYellow, 12, y - 12);
+
+            //c.DrawString(avgstr, fontsm, color, samples - len, y - 12);
+            //   c.DrawString(data.Count + "", font, drawBrushYellow, samples - 20, 12 + y+(paintheight/2));
+
+        }
+
+        public void paintCharts(double bytesReceivedSpeed, int avgIn, double bytesSentSpeed, int avgOut)
+        {
+            String sent = Math.Round(bytesSentSpeed, 2).ToString() + " KB/s";
+            String received = Math.Round(bytesReceivedSpeed, 2).ToString() + " KB/s";
+
+            Bitmap canvas = new Bitmap(global::NetSpeed.Properties.Resources.metal);
+
+            System.Drawing.Graphics ImageCanvas = System.Drawing.Graphics.FromImage(canvas);
+
+            ImageCanvas.TextRenderingHint = System.Drawing.Text.TextRenderingHint.SingleBitPerPixelGridFit;
+            ImageCanvas.FillRectangle(drawBrushBlack, 6, 6, form.Width - 12, form.Height - 12);
+
+            //grid
+            for (int i = 6; i < form.Width - 6; i += 4)
+                for (int k = 6; k < form.Height - 6; k += 4)
+                    canvas.SetPixel(i, k, Color.DarkBlue);
+
+
+
+            ImageCanvas.DrawLine(new Pen(drawBrushBG), 6, form.Height / 2, form.Width - 6, form.Height / 2);
+            paintChart("in", ImageCanvas, drawBrushDL, 10, 18, form.Width - 20, form.Height / 2 - 20, dataIn, received);
+            paintChart("out", ImageCanvas, drawBrushUP, 10, form.Height / 2 + 12, form.Width - 20, form.Height / 2 - 20, dataOut, sent);
+            ImageCanvas.Dispose();
+            if (form.BackgroundImage != null)
+            {
+                form.BackgroundImage.Dispose();
+            }
+            form.BackgroundImage = canvas;
+
+
+
+        }
+
+        public void paintTray(double bytesReceivedSpeed, int avgIn, double bytesSentSpeed, int avgOut)
+        {
+            Bitmap bmp = new Bitmap(16, 16);
+            System.Drawing.Graphics ImageGraphics = System.Drawing.Graphics.FromImage(bmp);
+
+            int min = 0;
+            ImageGraphics.FillRectangle(drawBrushBG, 0, 0, 16, 16);
+            ImageGraphics.DrawRectangle(new System.Drawing.Pen(drawBrushBlack), 0.0f, 0.0f, 15.0f, 15.0f);
+            int scaleDl = ((int)bytesReceivedSpeed * 100 / config.max * 15) / 100;
+            if (scaleDl > 15) scaleDl = 15;
+            int scaleUp = ((int)bytesSentSpeed * 100 / config.maxup * 15) / 100;
+            if (scaleUp > 15) scaleUp = 15;
+            ImageGraphics.FillRectangle(drawBrushDL, 2, 16 - scaleDl, 5, scaleDl - 1);
+            ImageGraphics.FillRectangle(drawBrushUP, 9, 16 - scaleUp, 5, scaleUp - 1);
+
+            if (paintAvg)
+            {
+
+                int avgInScale = (avgIn * 100 / config.max * 15) / 100;
+                if (avgInScale > 15) avgInScale = 15;
+                if (avgInScale < 0) avgInScale = 0;
+                ImageGraphics.DrawLine(new Pen(drawBrushAvg), 2, 16 - avgInScale, 6, 16 - avgInScale);
+
+                int avgOutScale = (avgOut * 100 / config.maxup * 15) / 100;
+                if (avgOutScale > 15) avgOutScale = 15;
+                if (avgOutScale < 0) avgOutScale = 0;
+                ImageGraphics.DrawLine(new Pen(drawBrushAvg), 9, 16 - avgOutScale, 13, 16 - avgOutScale);
+            }
+
+            ImageGraphics.Dispose();
+            double inPercent = (bytesReceivedSpeed / (double)config.max) * 100.0;
+            double outPercent = (bytesSentSpeed / (double)config.maxup) * 100.0;
+
+            String text = "DL: " + Math.Round(bytesReceivedSpeed, 2) + " KB/s (" + Math.Round(inPercent, 2) + "%)\nUP: " + Math.Round(bytesSentSpeed, 2) + " KB/s (" + Math.Round(outPercent, 2) + "%)";
+            try
+            {
+
+                
+                icon.Icon = Convert(bmp);
+                icon.Text = text;
+            }
+            catch (Exception e)
+            {
+             
+            }
+
+            bmp.Dispose();
+        }
+
+        [DllImport("user32.dll", EntryPoint = "DestroyIcon")]
+        private static extern bool DestroyIcon(IntPtr hIcon);
+
+        public static Icon Convert(Bitmap bitmap)
+        {
+            Icon icon = null;
+
+
+            IntPtr UnmanagedIconHandle = bitmap.GetHicon();
+
+            // Clone FromHandle result so we can destroy the unmanaged handle version of the icon before the converted object is passed out.
+            icon = Icon.FromHandle(UnmanagedIconHandle).Clone() as Icon;
+
+            //Unfortunately, GetHicon creates an unmanaged handle which must be manually destroyed otherwise a generic error will occur in GDI+.
+            DestroyIcon(UnmanagedIconHandle);
+
+            return icon;
+        }
+    }
+}

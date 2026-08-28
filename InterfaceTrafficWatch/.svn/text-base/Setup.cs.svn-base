@@ -1,19 +1,20 @@
-﻿using NetSpeed;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
-using System.Net.NetworkInformation;
+
 using System.Text;
 using System.Windows.Forms;
+using System.Net.NetworkInformation;
+using NetSpeed;
 
 namespace InterfaceTrafficWatch
 {
     public partial class Setup : Form
     {
 
-
+     
         private NetworkInterface[] nicArr;
 
         private String nicName;
@@ -37,7 +38,7 @@ namespace InterfaceTrafficWatch
             // Change the initial selection to the first interface
             cmbInterface.SelectedIndex = ix;
         }
-
+  
         public Setup(Config config)
         {
             InitializeComponent();
@@ -50,11 +51,11 @@ namespace InterfaceTrafficWatch
                     textBox2.Text = config.maxup.ToString();
                     textBox3.Text = config.timerUpdate.ToString();
                     textBox4.Text = config.width.ToString();
-                    textBox5.Text = config.height.ToString();
+                    textBox5.Text = config.height.ToString ();
                     nicName = config.nic.Name.ToString();
                     if (config.paintAvg) checkBox1.Checked = true;
                     else checkBox1.Checked = false;
-
+                 
                 }
                 catch (Exception e)
                 {
@@ -64,7 +65,7 @@ namespace InterfaceTrafficWatch
             InitializeNetworkInterface();
         }
 
-
+     
 
         private void button1_Click(object sender, EventArgs e)
         {
@@ -72,7 +73,7 @@ namespace InterfaceTrafficWatch
             {
                 nicArr = NetworkInterface.GetAllNetworkInterfaces();
                 nicName = cmbInterface.SelectedItem.ToString();
-
+               
                 for (int i = 0; i < nicArr.Length; i++)
                 {
                     if (nicName != null && nicName == nicArr[i].Name)
@@ -84,8 +85,8 @@ namespace InterfaceTrafficWatch
                 }
                 config.max = System.Convert.ToInt32(textBox1.Text, 10);
                 config.maxup = System.Convert.ToInt32(textBox2.Text, 10);
-                config.timerUpdate = System.Convert.ToInt32(textBox3.Text, 10);
-                config.paintAvg = checkBox1.Checked;
+                config.timerUpdate= System.Convert.ToInt32(textBox3.Text, 10);
+                config.paintAvg= checkBox1.Checked;
                 config.width = System.Convert.ToInt32(textBox4.Text, 10);
                 config.height = System.Convert.ToInt32(textBox5.Text, 10);
                 Application.UserAppDataRegistry.SetValue("Interface", config.nic.Name.ToString());
@@ -98,7 +99,7 @@ namespace InterfaceTrafficWatch
             }
             catch (Exception e3)
             {
-
+                
             }
             this.Close();
         }
@@ -109,7 +110,7 @@ namespace InterfaceTrafficWatch
         }
 
 
-
+  
 
 
 
@@ -190,7 +191,7 @@ namespace InterfaceTrafficWatch
 
 
 
-
+  
 
 
 
