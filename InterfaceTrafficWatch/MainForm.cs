@@ -16,26 +16,29 @@ namespace InterfaceTrafficWatch
         private long bytesSentLast;
         private long bytesReceivedLast;
         private bool hasBaseline;
+        private string nicId;
 
-        private Drawing drawing = new Drawing();
+        private Drawing drawing;
         private Config config;
         private bool topMost;
         private Point pos;
         private bool hidden;
 
-        private const int MaxSamples = 120;
+        private int maxSamples = 120;
         private const int MaxSpeedKBs = 10 * 1024 * 1024; // 10 GB/s — odcinamy śmieci po wrapie
 
         public MainForm()
         {
-            InitializeComponent();
             config = new Config(this);
             ReloadConfig();
+            InitializeComponent();
+
             if (config.nic == null)
                 InitializeNetwork();
 
             initWindows();
             InitializeTimer();
+            drawing = new Drawing(this, config, notifyIcon1);
         }
 
         private void initWindows()
@@ -46,6 +49,10 @@ namespace InterfaceTrafficWatch
             this.BackgroundImageLayout = ImageLayout.None;
             this.Left = config.x;
             this.Top = config.y;
+            this.Width = Math.Max(16, config.width);
+            this.Height = Math.Max(16, config.height);
+            maxSamples = this.Width - 20;
+        
         }
 
         public void ReloadConfig()
@@ -53,8 +60,6 @@ namespace InterfaceTrafficWatch
             try
             {
                 config.ReloadConfig();
-                this.Width = Math.Max(16, config.width);
-                this.Height = Math.Max(16, config.height);
 
                 if (timer != null)
                 {
@@ -75,33 +80,105 @@ namespace InterfaceTrafficWatch
         {
             try
             {
-                NetworkInterface[] nics = NetworkInterface.GetAllNetworkInterfaces();
-                if (nics == null || nics.Length == 0)
-                {
-                    config.nic = null;
-                    return;
-                }
-
-                foreach (NetworkInterface nic in nics)
-                {
-                    if (nic.OperationalStatus == OperationalStatus.Up &&
-                        nic.NetworkInterfaceType != NetworkInterfaceType.Loopback &&
-                        nic.NetworkInterfaceType != NetworkInterfaceType.Tunnel)
-                    {
-                        config.nic = nic;
-                        ResetCounters();
-                        return;
-                    }
-                }
-
-                config.nic = nics[0];
+                NetworkInterface nic = FindNic();
+                config.nic = nic;
+                nicId = nic != null ? nic.Id : null;
                 ResetCounters();
             }
             catch (Exception ex)
             {
                 config.nic = null;
+                nicId = null;
                 DebugError("InitializeNetwork", ex);
             }
+        }
+
+        private NetworkInterface FindNic()
+        {
+            NetworkInterface[] nics;
+            try
+            {
+                nics = NetworkInterface.GetAllNetworkInterfaces();
+            }
+            catch (Exception ex)
+            {
+                DebugError("GetAllNetworkInterfaces", ex);
+                return null;
+            }
+
+            if (nics == null || nics.Length == 0)
+                return null;
+
+            string wantedId = nicId;
+            if (string.IsNullOrEmpty(wantedId) && config.nic != null)
+                wantedId = config.nic.Id;
+
+            if (!string.IsNullOrEmpty(wantedId))
+            {
+                foreach (NetworkInterface n in nics)
+                {
+                    if (n.Id == wantedId)
+                        return n;
+                }
+            }
+
+            foreach (NetworkInterface n in nics)
+            {
+                if (n.OperationalStatus == OperationalStatus.Up &&
+                    n.NetworkInterfaceType != NetworkInterfaceType.Loopback &&
+                    n.NetworkInterfaceType != NetworkInterfaceType.Tunnel)
+                {
+                    return n;
+                }
+            }
+
+            return nics[0];
+        }
+
+        private static bool TryGetTotals(NetworkInterface nic, out long sent, out long received)
+        {
+            sent = 0;
+            received = 0;
+            if (nic == null)
+                return false;
+
+            try
+            {
+                IPInterfaceStatistics ip = nic.GetIPStatistics();
+                if (ip != null)
+                {
+                    sent = ip.BytesSent;
+                    received = ip.BytesReceived;
+                    return true;
+                }
+            }
+            catch (NetworkInformationException)
+            {
+            }
+            catch (Exception ex)
+            {
+                DebugError("GetIPStatistics", ex);
+            }
+
+            try
+            {
+                IPv4InterfaceStatistics v4 = nic.GetIPv4Statistics();
+                if (v4 != null)
+                {
+                    sent = v4.BytesSent;
+                    received = v4.BytesReceived;
+                    return true;
+                }
+            }
+            catch (NetworkInformationException)
+            {
+            }
+            catch (Exception ex)
+            {
+                DebugError("GetIPv4Statistics", ex);
+            }
+
+            return false;
         }
 
         private void ResetCounters()
@@ -110,7 +187,6 @@ namespace InterfaceTrafficWatch
             bytesReceivedLast = 0;
             hasBaseline = false;
         }
-
         private void InitializeTimer()
         {
             int interval = 1000;
@@ -141,29 +217,31 @@ namespace InterfaceTrafficWatch
                 if (config == null)
                     return;
 
-                if (config.nic == null)
-                {
-                    InitializeNetwork();
-                    if (config.nic == null)
-                        return;
-                }
-
-                IPv4InterfaceStatistics stats;
-                try
-                {
-                    stats = config.nic.GetIPv4Statistics();
-                }
-                catch (NetworkInformationException)
+                NetworkInterface nic = FindNic();
+                if (nic == null)
                 {
                     InitializeNetwork();
                     return;
                 }
 
-                if (stats == null)
-                    return;
+                if (nicId != nic.Id)
+                {
+                    nicId = nic.Id;
+                    config.nic = nic;
+                    ResetCounters();
+                }
+                else
+                {
+                    config.nic = nic;
+                }
 
-                long bytesSent = stats.BytesSent;
-                long bytesReceived = stats.BytesReceived;
+                long bytesSent;
+                long bytesReceived;
+                if (!TryGetTotals(nic, out bytesSent, out bytesReceived))
+                {
+                    ResetCounters();
+                    return;
+                }
 
                 if (!hasBaseline)
                 {
@@ -192,18 +270,18 @@ namespace InterfaceTrafficWatch
                 AddSample(dataIn, (int)Math.Round(bytesReceivedSpeed));
                 AddSample(dataOut, (int)Math.Round(bytesSentSpeed));
 
-                drawing.paintAll(
-                    bytesReceivedSpeed,
-                    GetAvg(dataIn),
-                    bytesSentSpeed,
-                    GetAvg(dataOut),
-                    this,
-                    notifyIcon1,
-                    config,
-                    dataIn,
-                    dataOut);
+              //  if (drawing != null)
+                {
+                    drawing.paintAll(
+                        bytesReceivedSpeed,
+                        GetAvg(dataIn),
+                        bytesSentSpeed,
+                        GetAvg(dataOut),
+                        dataIn,
+                        dataOut);
+                }
 
-                Invalidate();
+                Refresh();
             }
             catch (Exception ex)
             {
@@ -240,19 +318,17 @@ namespace InterfaceTrafficWatch
             return kbPerSec;
         }
 
-        private static void AddSample(List<int> data, int value)
+        private void AddSample(List<int> data, int value)
         {
             if (value < 0)
                 value = 0;
-            if (value > int.MaxValue)
-                value = int.MaxValue;
 
             data.Add(value);
-            while (data.Count > MaxSamples)
+            while (data.Count > maxSamples)
                 data.RemoveAt(0);
         }
 
-        private static int GetAvg(IList<int> data)
+        private  int GetAvg(IList<int> data)
         {
             if (data == null || data.Count == 0)
                 return 0;
@@ -292,6 +368,7 @@ namespace InterfaceTrafficWatch
                 if (timer != null)
                 {
                     timer.Stop();
+                    timer.Tick -= timer_Tick;
                     timer.Dispose();
                     timer = null;
                 }
@@ -312,7 +389,10 @@ namespace InterfaceTrafficWatch
                 config.writeConfig();
                 setup.ShowDialog();
                 ReloadConfig();
-                ResetCounters();
+                InitializeNetwork();
+                //dataIn.Clear();
+                //dataOut.Clear();
+                initWindows();
             }
             catch (Exception ex)
             {

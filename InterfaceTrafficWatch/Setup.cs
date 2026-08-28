@@ -51,6 +51,9 @@ namespace InterfaceTrafficWatch
                     textBox3.Text = config.timerUpdate.ToString();
                     textBox4.Text = config.width.ToString();
                     textBox5.Text = config.height.ToString();
+                    textBox7.Text = config.font.ToString();
+                    textBox6.Text = config.fontLegend.ToString();
+
                     nicName = config.nic.Name.ToString();
                     if (config.paintAvg) checkBox1.Checked = true;
                     else checkBox1.Checked = false;
@@ -88,6 +91,9 @@ namespace InterfaceTrafficWatch
                 config.paintAvg = checkBox1.Checked;
                 config.width = System.Convert.ToInt32(textBox4.Text, 10);
                 config.height = System.Convert.ToInt32(textBox5.Text, 10);
+                config.font = System.Convert.ToInt32(textBox7.Text, 10);
+                config.fontLegend = System.Convert.ToInt32(textBox6.Text, 10); ;
+
                 Application.UserAppDataRegistry.SetValue("Interface", config.nic.Name.ToString());
                 Application.UserAppDataRegistry.SetValue("MaxDL", config.max);
                 Application.UserAppDataRegistry.SetValue("MaxUP", config.maxup);
@@ -95,6 +101,10 @@ namespace InterfaceTrafficWatch
                 Application.UserAppDataRegistry.SetValue("Average", config.paintAvg);
                 Application.UserAppDataRegistry.SetValue("Width", config.width);
                 Application.UserAppDataRegistry.SetValue("Height", config.height);
+                Application.UserAppDataRegistry.SetValue("Font", config.font);
+                Application.UserAppDataRegistry.SetValue("FontLegend", config.fontLegend);
+
+              
             }
             catch (Exception e3)
             {
@@ -119,7 +129,7 @@ namespace InterfaceTrafficWatch
             {
                 int value = System.Convert.ToInt32(textBox4.Text, 10);
                 if (value < 100) value = 100;
-                if (value > 250) value = 250;
+                if (value > 500) value = 500;
                 textBox4.Text = value + "";
             }
             catch (Exception ee)
@@ -179,7 +189,7 @@ namespace InterfaceTrafficWatch
             {
                 int value = System.Convert.ToInt32(textBox5.Text, 10);
                 if (value < 100) value = 100;
-                if (value > 220) value = 220;
+                if (value > 600) value = 600;
                 textBox5.Text = value + "";
             }
             catch (Exception ee)

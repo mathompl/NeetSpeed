@@ -16,8 +16,8 @@ namespace NetSpeed
         SolidBrush drawBrushYellow;
         SolidBrush drawBrushAvg;
 
-        Font font = new Font("Consolas", 6f);
-        Font fontsm = new Font("Consolas", 5f);
+        Font font;
+        Font fontsm;
 
         Form form;
         NotifyIcon icon;
@@ -25,35 +25,47 @@ namespace NetSpeed
         IList dataIn;
         IList dataOut;
 
+        public Drawing(Form form, Config config, NotifyIcon notifyIcon1)
+        {
+            this.form = form;
+            this.icon = notifyIcon1;
+            this.config = config;
+            initBrushes();
+            initFonts();
+        }
+
         public void paintAll(double bytesReceivedSpeed, int avgIn, double bytesSentSpeed, int avgOut,
-            Form form, NotifyIcon notifyIcon1, Config config, IList dataIn, IList dataOut)
+            IList dataIn, IList dataOut)
         {
             try
             {
                 if (form == null || config == null)
                     return;
 
-                this.form = form;
-                this.icon = notifyIcon1;
-                this.config = config;
+                EnsureAlive();
+                initFonts();
+
                 this.dataIn = dataIn ?? new ArrayList();
                 this.dataOut = dataOut ?? new ArrayList();
 
-                initBrushes();
                 paintTray(bytesReceivedSpeed, avgIn, bytesSentSpeed, avgOut);
                 paintCharts(bytesReceivedSpeed, avgIn, bytesSentSpeed, avgOut);
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine("paintAll: " + ex);
             }
-            finally
-            {
-                disposeBrushes();
-            }
+        }
+
+        private void EnsureAlive()
+        {
+            if (drawBrushBG == null)
+                initBrushes();
         }
 
         public void initBrushes()
         {
+            disposeBrushes();
             drawBrushBG = new SolidBrush(Color.Gray);
             drawBrushBlack = new SolidBrush(Color.Black);
             drawBrushBlue = new SolidBrush(Color.DarkBlue);
@@ -63,15 +75,39 @@ namespace NetSpeed
             drawBrushYellow = new SolidBrush(Color.Yellow);
         }
 
+        private void initFonts()
+        {
+            float size = config != null ? (float)config.font : 8f;
+            float sizeSm = config != null ? (float)config.fontLegend : 7f;
+            if (size < 6f) size = 6f;
+            if (size > 48f) size = 48f;
+            if (sizeSm < 5f) sizeSm = 5f;
+            if (sizeSm > 24f) sizeSm = 24f;
+
+            if (font != null) font.Dispose();
+            if (fontsm != null) fontsm.Dispose();
+
+            try
+            {
+                font = new Font("Consolas", size);
+                fontsm = new Font("Consolas", sizeSm);
+            }
+            catch
+            {
+                font = new Font(FontFamily.GenericMonospace, size);
+                fontsm = new Font(FontFamily.GenericMonospace, sizeSm);
+            }
+        }
+
         public void disposeBrushes()
         {
-            if (drawBrushBG != null) drawBrushBG.Dispose();
-            if (drawBrushBlack != null) drawBrushBlack.Dispose();
-            if (drawBrushBlue != null) drawBrushBlue.Dispose();
-            if (drawBrushUP != null) drawBrushUP.Dispose();
-            if (drawBrushDL != null) drawBrushDL.Dispose();
-            if (drawBrushYellow != null) drawBrushYellow.Dispose();
-            if (drawBrushAvg != null) drawBrushAvg.Dispose();
+            if (drawBrushBG != null) { drawBrushBG.Dispose(); drawBrushBG = null; }
+            if (drawBrushBlack != null) { drawBrushBlack.Dispose(); drawBrushBlack = null; }
+            if (drawBrushBlue != null) { drawBrushBlue.Dispose(); drawBrushBlue = null; }
+            if (drawBrushUP != null) { drawBrushUP.Dispose(); drawBrushUP = null; }
+            if (drawBrushDL != null) { drawBrushDL.Dispose(); drawBrushDL = null; }
+            if (drawBrushYellow != null) { drawBrushYellow.Dispose(); drawBrushYellow = null; }
+            if (drawBrushAvg != null) { drawBrushAvg.Dispose(); drawBrushAvg = null; }
         }
 
         private static int ToIntSample(object item)
@@ -80,7 +116,7 @@ namespace NetSpeed
                 return 0;
             try
             {
-                long v = System.Convert.ToInt64(item);
+                long v = Convert.ToInt64(item);
                 if (v < 0) return 0;
                 if (v > int.MaxValue) return int.MaxValue;
                 return (int)v;
@@ -89,6 +125,28 @@ namespace NetSpeed
             {
                 return 0;
             }
+        }
+
+        private static double Safe(double v)
+        {
+            if (double.IsNaN(v) || double.IsInfinity(v) || v < 0)
+                return 0;
+            return v;
+        }
+
+        private static string FormatSpeed(double kbPerSec)
+        {
+            kbPerSec = Safe(kbPerSec);
+            if (kbPerSec >= 1024.0 * 1024.0)
+                return Math.Round(kbPerSec / (1024.0 * 1024.0), 2) + " GB/s";
+            if (kbPerSec >= 1024.0)
+                return Math.Round(kbPerSec / 1024.0, 2) + " MB/s";
+            return Math.Round(kbPerSec, 2) + " KB/s";
+        }
+
+        private static string FormatRate(int kbPerSec)
+        {
+            return FormatSpeed(kbPerSec);
         }
 
         public static Icon BitmapToIcon(Bitmap bitmap)
@@ -108,7 +166,7 @@ namespace NetSpeed
         public void paintChart(string stream, Graphics c, SolidBrush color, int x, int y,
             int samples, int height, IList data, string speed)
         {
-            if (c == null || data == null || samples <= 0 || height <= 0)
+            if (c == null || data == null || samples <= 0 || height <= 0 || font == null)
                 return;
 
             while (data.Count > samples)
@@ -130,9 +188,7 @@ namespace NetSpeed
             }
 
             int avg = (int)(sum / data.Count);
-            int paintheight = height;
-            if (paintheight <= 0)
-                paintheight = 1;
+            int paintheight = height < 1 ? 1 : height;
             if (max <= 0)
                 max = paintheight;
 
@@ -144,23 +200,45 @@ namespace NetSpeed
                 using (Pen p = new Pen(drawBrushAvg))
                     c.DrawLine(p, x, avgy, samples + x, avgy);
             }
+            int offset = 0;
+            if (offset < 0)
+                offset = 0;
 
             using (Pen linePen = new Pen(color))
             {
-                for (int i = 2; i < data.Count; i++)
+                for (int i = 1; i < data.Count; i++)
                 {
                     int lastY = (int)(ToIntSample(data[i - 1]) * scale);
                     int nowY = (int)(ToIntSample(data[i]) * scale);
-                    c.DrawLine(linePen,
-                        samples + x - i, y - lastY + paintheight,
-                        samples + x - i - 1, y - nowY + paintheight);
+                    c.DrawLine(
+                        linePen,
+                        x + offset + i - 1, y - lastY + paintheight,
+                        x + offset + i, y - nowY + paintheight);
                 }
             }
 
-            c.DrawString(max.ToString(), fontsm, drawBrushYellow, samples - 20, y);
-            c.DrawString((max / 2).ToString(), fontsm, drawBrushYellow, samples - 20, y + (paintheight / 2));
-            c.DrawString("KB/s", fontsm, drawBrushYellow, samples - 10, y + (paintheight / 4));
-            c.DrawString(speed + " " + stream + " (avg " + avg + " KB/s)", font, drawBrushYellow, 12, y - 12);
+            const int pad = 4;
+
+            SizeF szMax = c.MeasureString(FormatRate(max), fontsm);
+            SizeF szMid = c.MeasureString(FormatRate(max / 2), fontsm);
+
+            float labelX = x + samples - pad - Math.Max(szMax.Width, szMid.Width);
+            if (labelX < x + pad)
+                labelX = x + pad;
+
+            float yMax = y + pad;
+            float yMid = y + paintheight / 2f - szMid.Height / 2f;
+
+            if (yMax + szMax.Height > y + paintheight)
+                yMax = y + paintheight - szMax.Height - pad;
+            if (yMid < y + pad)
+                yMid = y + pad;
+            if (yMid + szMid.Height > y + paintheight)
+                yMid = y + paintheight - szMid.Height - pad;
+
+            c.DrawString(FormatRate(max), fontsm, drawBrushYellow, labelX, yMax);
+            c.DrawString(FormatRate(max / 2), fontsm, drawBrushYellow, labelX, yMid);
+            c.DrawString(speed + " " + stream + " (avg " + FormatRate(avg) + ")", font, drawBrushYellow, 12, y - 12);
         }
 
         public void paintCharts(double bytesReceivedSpeed, int avgIn, double bytesSentSpeed, int avgOut)
@@ -168,21 +246,24 @@ namespace NetSpeed
             if (form == null || form.Width < 20 || form.Height < 20)
                 return;
 
-            string sent = Math.Round(Safe(bytesSentSpeed), 2) + " KB/s";
-            string received = Math.Round(Safe(bytesReceivedSpeed), 2) + " KB/s";
+            string sent = FormatSpeed(bytesSentSpeed);
+            string received = FormatSpeed(bytesReceivedSpeed);
+
+            int w = Math.Max(1, form.Width);
+            int h = Math.Max(1, form.Height);
 
             Bitmap canvas = null;
             try
             {
-                canvas = TryLoadMetal(form.Width, form.Height);
+                canvas = TryLoadMetal(w, h);
 
                 using (Graphics imageCanvas = Graphics.FromImage(canvas))
                 {
                     imageCanvas.TextRenderingHint = System.Drawing.Text.TextRenderingHint.SingleBitPerPixelGridFit;
-                    imageCanvas.FillRectangle(drawBrushBlack, 6, 6, form.Width - 12, form.Height - 12);
+                    imageCanvas.FillRectangle(drawBrushBlack, 6, 6, Math.Max(1, w - 12), Math.Max(1, h - 12));
 
-                    int maxX = Math.Min(form.Width - 6, canvas.Width);
-                    int maxY = Math.Min(form.Height - 6, canvas.Height);
+                    int maxX = Math.Min(w - 6, canvas.Width);
+                    int maxY = Math.Min(h - 6, canvas.Height);
                     for (int i = 6; i < maxX; i += 4)
                     {
                         for (int k = 6; k < maxY; k += 4)
@@ -190,10 +271,10 @@ namespace NetSpeed
                     }
 
                     using (Pen gridPen = new Pen(drawBrushBG))
-                        imageCanvas.DrawLine(gridPen, 6, form.Height / 2, form.Width - 6, form.Height / 2);
+                        imageCanvas.DrawLine(gridPen, 6, h / 2, w - 6, h / 2);
 
-                    paintChart("in", imageCanvas, drawBrushDL, 10, 18, form.Width - 20, form.Height / 2 - 20, dataIn, received);
-                    paintChart("out", imageCanvas, drawBrushUP, 10, form.Height / 2 + 12, form.Width - 20, form.Height / 2 - 20, dataOut, sent);
+                    paintChart("in", imageCanvas, drawBrushDL, 10, 18, w - 20, h / 2 - 20, dataIn, received);
+                    paintChart("out", imageCanvas, drawBrushUP, 10, h / 2 + 12, w - 20, h / 2 - 20, dataOut, sent);
                 }
 
                 Image old = form.BackgroundImage;
@@ -202,8 +283,9 @@ namespace NetSpeed
                 if (old != null)
                     old.Dispose();
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine("paintCharts: " + ex);
                 if (canvas != null)
                     canvas.Dispose();
             }
@@ -272,8 +354,8 @@ namespace NetSpeed
                 double inPercent = Safe(bytesReceivedSpeed) / Math.Max(1, config.max) * 100.0;
                 double outPercent = Safe(bytesSentSpeed) / Math.Max(1, config.maxup) * 100.0;
 
-                string text = "DL: " + Math.Round(Safe(bytesReceivedSpeed), 2) + " KB/s (" + Math.Round(inPercent, 2) + "%)\n" +
-                              "UP: " + Math.Round(Safe(bytesSentSpeed), 2) + " KB/s (" + Math.Round(outPercent, 2) + "%)";
+                string text = "DL: " + FormatSpeed(bytesReceivedSpeed) + " (" + Math.Round(inPercent, 2) + "%)\n" +
+                              "UP: " + FormatSpeed(bytesSentSpeed) + " (" + Math.Round(outPercent, 2) + "%)";
                 if (text.Length > 63)
                     text = text.Substring(0, 63);
 
@@ -283,8 +365,9 @@ namespace NetSpeed
                 if (oldIcon != null)
                     oldIcon.Dispose();
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine("paintTray: " + ex);
             }
             finally
             {
@@ -293,28 +376,7 @@ namespace NetSpeed
             }
         }
 
-        private static double Safe(double v)
-        {
-            if (double.IsNaN(v) || double.IsInfinity(v) || v < 0)
-                return 0;
-            return v;
-        }
-
         [DllImport("user32.dll", EntryPoint = "DestroyIcon")]
         private static extern bool DestroyIcon(IntPtr hIcon);
-
-        public static Icon Convert(Bitmap bitmap)
-        {
-            IntPtr handle = bitmap.GetHicon();
-            try
-            {
-                using (Icon tmp = Icon.FromHandle(handle))
-                    return (Icon)tmp.Clone();
-            }
-            finally
-            {
-                DestroyIcon(handle);
-            }
-        }
     }
 }

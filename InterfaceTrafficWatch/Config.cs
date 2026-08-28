@@ -15,6 +15,10 @@ namespace NetSpeed
         public Boolean paintAvg = true;
         public int x, y;
         public int width = 200, height = 150;
+
+        public int font = 6;
+        public int fontLegend = 5;
+
         Form form;
 
         public Config(Form form)
@@ -41,6 +45,17 @@ namespace NetSpeed
                 //hidden = !b;
                 //Minimalizuj_Click(null,null);
             }
+
+            if (Application.UserAppDataRegistry.GetValue("Font") != null)
+            {
+                font = (int)Application.UserAppDataRegistry.GetValue("Font");
+            }
+
+            if (Application.UserAppDataRegistry.GetValue("FontLegend") != null)
+            {
+                fontLegend = (int)Application.UserAppDataRegistry.GetValue("FontLegend");
+            }
+
             Console.Out.WriteLine(Application.UserAppDataRegistry.GetValue("Average"));
             if (Application.UserAppDataRegistry.GetValue("Average") != null) paintAvg = System.Convert.ToBoolean(Application.UserAppDataRegistry.GetValue("Average"));
             if (Application.UserAppDataRegistry.GetValue("MaxDL") != null) max = (int)Application.UserAppDataRegistry.GetValue("MaxDL");
@@ -73,9 +88,11 @@ namespace NetSpeed
         {
             Application.UserAppDataRegistry.SetValue("X", form.Left);
             Application.UserAppDataRegistry.SetValue("Y", form.Top);
-            Application.UserAppDataRegistry.SetValue("Width", form.Width);
-            Application.UserAppDataRegistry.SetValue("Height", form.Height);
+            //Application.UserAppDataRegistry.SetValue("Width", form.Width);
+          //  Application.UserAppDataRegistry.SetValue("Height", form.Height);
         }
+
+
 
     }
 }
