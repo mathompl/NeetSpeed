@@ -27,6 +27,17 @@ namespace InterfaceTrafficWatch
         private int maxSamples = 120;
         private const int MaxSpeedKBs = 10 * 1024 * 1024; // 10 GB/s — odcinamy śmieci po wrapie
 
+        [System.Runtime.InteropServices.DllImport("gdi32.dll")]
+        private static extern IntPtr CreateRoundRectRgn(int nLeftRect, int nTopRect,
+    int nRightRect, int nBottomRect, int nWidthEllipse, int nHeightEllipse);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern int SetWindowRgn(IntPtr hWnd, IntPtr hRgn, bool bRedraw);
+
+        [System.Runtime.InteropServices.DllImport("gdi32.dll")]
+        private static extern bool DeleteObject(IntPtr hObject);
+
+
         public MainForm()
         {
             config = new Config(this);
@@ -52,7 +63,19 @@ namespace InterfaceTrafficWatch
             this.Width = Math.Max(16, config.width);
             this.Height = Math.Max(16, config.height);
             maxSamples = this.Width - 20;
-        
+            ApplyRoundedCorners(12);
+
+        }
+
+
+        private void ApplyRoundedCorners(int radius)
+        {
+            if (radius < 1)
+                radius = 1;
+
+            IntPtr rgn = CreateRoundRectRgn(0, 0, Width + 1, Height + 1, radius, radius);
+            SetWindowRgn(Handle, rgn, true);
+            DeleteObject(rgn);
         }
 
         public void ReloadConfig()
@@ -270,7 +293,7 @@ namespace InterfaceTrafficWatch
                 AddSample(dataIn, (int)Math.Round(bytesReceivedSpeed));
                 AddSample(dataOut, (int)Math.Round(bytesSentSpeed));
 
-              //  if (drawing != null)
+                //  if (drawing != null)
                 {
                     drawing.paintAll(
                         bytesReceivedSpeed,
@@ -328,7 +351,7 @@ namespace InterfaceTrafficWatch
                 data.RemoveAt(0);
         }
 
-        private  int GetAvg(IList<int> data)
+        private int GetAvg(IList<int> data)
         {
             if (data == null || data.Count == 0)
                 return 0;
