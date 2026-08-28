@@ -19,6 +19,8 @@ namespace NetSpeed
         public int font = 6;
         public int fontLegend = 5;
 
+        public Boolean startMinimized = false;
+
         Form form;
 
         public Config(Form form)
@@ -58,6 +60,7 @@ namespace NetSpeed
 
             Console.Out.WriteLine(Application.UserAppDataRegistry.GetValue("Average"));
             if (Application.UserAppDataRegistry.GetValue("Average") != null) paintAvg = System.Convert.ToBoolean(Application.UserAppDataRegistry.GetValue("Average"));
+            if (Application.UserAppDataRegistry.GetValue("StartMinimized") != null) startMinimized = System.Convert.ToBoolean(Application.UserAppDataRegistry.GetValue("StartMinimized"));
             if (Application.UserAppDataRegistry.GetValue("MaxDL") != null) max = (int)Application.UserAppDataRegistry.GetValue("MaxDL");
             if (Application.UserAppDataRegistry.GetValue("MaxUP") != null) maxup = (int)Application.UserAppDataRegistry.GetValue("MaxUP");
             if (Application.UserAppDataRegistry.GetValue("Timer") != null)
@@ -96,3 +99,4 @@ namespace NetSpeed
 
     }
 }
+

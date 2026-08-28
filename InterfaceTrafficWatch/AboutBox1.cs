@@ -7,7 +7,7 @@ using System.Drawing;
 using System.Reflection;
 using System.Windows.Forms;
 
-namespace InterfaceTrafficWatch
+namespace NetSpeed
 {
     partial class AboutBox1 : Form
     {

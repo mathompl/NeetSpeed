@@ -5,7 +5,7 @@ using System.Drawing;
 using System.Net.NetworkInformation;
 using System.Windows.Forms;
 
-namespace InterfaceTrafficWatch
+namespace NetSpeed
 {
     public partial class MainForm : Form
     {
@@ -50,6 +50,10 @@ namespace InterfaceTrafficWatch
             initWindows();
             InitializeTimer();
             drawing = new Drawing(this, config, notifyIcon1);
+
+
+            if (config.startMinimized)
+                BeginInvoke(new Action(Minimize));
         }
 
         private void initWindows()

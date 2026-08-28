@@ -1,4 +1,4 @@
-﻿namespace InterfaceTrafficWatch
+﻿namespace NetSpeed
 {
     partial class MainForm
     {

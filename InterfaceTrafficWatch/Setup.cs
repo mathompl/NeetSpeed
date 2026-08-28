@@ -7,11 +7,17 @@ using System.Drawing;
 using System.Net.NetworkInformation;
 using System.Text;
 using System.Windows.Forms;
+using Microsoft.Win32;
+using System.Windows.Forms;
 
-namespace InterfaceTrafficWatch
+namespace NetSpeed
 {
     public partial class Setup : Form
     {
+
+
+        private const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
+        private const string RunName = "NetSpeed";
 
 
         private NetworkInterface[] nicArr;
@@ -46,17 +52,20 @@ namespace InterfaceTrafficWatch
             {
                 try
                 {
-                    textBox1.Text = config.max.ToString();
-                    textBox2.Text = config.maxup.ToString();
-                    textBox3.Text = config.timerUpdate.ToString();
-                    textBox4.Text = config.width.ToString();
-                    textBox5.Text = config.height.ToString();
-                    textBox7.Text = config.font.ToString();
-                    textBox6.Text = config.fontLegend.ToString();
-
+                    maxDlText.Text = config.max.ToString();
+                    maxUpText.Text = config.maxup.ToString();
+                    refreshText.Text = config.timerUpdate.ToString();
+                    widthText.Text = config.width.ToString();
+                    heightText.Text = config.height.ToString();
+                    fontText.Text = config.font.ToString();
+                    fontLegendText.Text = config.fontLegend.ToString();
+                    if (config.startMinimized) startMinimizedCheckbox.Checked = true;
+                    else startMinimizedCheckbox.Checked = false;
+                    
+                  
                     nicName = config.nic.Name.ToString();
-                    if (config.paintAvg) checkBox1.Checked = true;
-                    else checkBox1.Checked = false;
+                    if (config.paintAvg) showavgCheckbox.Checked = true;
+                    else showavgCheckbox.Checked = false;
 
                 }
                 catch (Exception e)
@@ -65,6 +74,39 @@ namespace InterfaceTrafficWatch
                 }
             }
             InitializeNetworkInterface();
+
+            autostartCheckBox.Checked = IsAutoStart();
+        }
+
+
+        private static string ExePath()
+        {
+            return "\"" + Application.ExecutablePath + "\"";
+        }
+
+        public static bool IsAutoStart()
+        {
+            using (RegistryKey key = Registry.CurrentUser.OpenSubKey(RunKey, false))
+            {
+                if (key == null)
+                    return false;
+                object v = key.GetValue(RunName);
+                return v != null && string.Equals(v.ToString(), ExePath(), StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        public static void SetAutoStart(bool enabled)
+        {
+            using (RegistryKey key = Registry.CurrentUser.OpenSubKey(RunKey, true))
+            {
+                if (key == null)
+                    return;
+
+                if (enabled)
+                    key.SetValue(RunName, ExePath());
+                else
+                    key.DeleteValue(RunName, false);
+            }
         }
 
 
@@ -85,14 +127,15 @@ namespace InterfaceTrafficWatch
                     }
 
                 }
-                config.max = System.Convert.ToInt32(textBox1.Text, 10);
-                config.maxup = System.Convert.ToInt32(textBox2.Text, 10);
-                config.timerUpdate = System.Convert.ToInt32(textBox3.Text, 10);
-                config.paintAvg = checkBox1.Checked;
-                config.width = System.Convert.ToInt32(textBox4.Text, 10);
-                config.height = System.Convert.ToInt32(textBox5.Text, 10);
-                config.font = System.Convert.ToInt32(textBox7.Text, 10);
-                config.fontLegend = System.Convert.ToInt32(textBox6.Text, 10); ;
+                config.max = System.Convert.ToInt32(maxDlText.Text, 10);
+                config.maxup = System.Convert.ToInt32(maxUpText.Text, 10);
+                config.timerUpdate = System.Convert.ToInt32(refreshText.Text, 10);
+                config.paintAvg = showavgCheckbox.Checked;
+                config.startMinimized = startMinimizedCheckbox.Checked;
+                config.width = System.Convert.ToInt32(widthText.Text, 10);
+                config.height = System.Convert.ToInt32(heightText.Text, 10);
+                config.font = System.Convert.ToInt32(fontText.Text, 10);
+                config.fontLegend = System.Convert.ToInt32(fontLegendText.Text, 10); ;
 
                 Application.UserAppDataRegistry.SetValue("Interface", config.nic.Name.ToString());
                 Application.UserAppDataRegistry.SetValue("MaxDL", config.max);
@@ -103,8 +146,10 @@ namespace InterfaceTrafficWatch
                 Application.UserAppDataRegistry.SetValue("Height", config.height);
                 Application.UserAppDataRegistry.SetValue("Font", config.font);
                 Application.UserAppDataRegistry.SetValue("FontLegend", config.fontLegend);
+                Application.UserAppDataRegistry.SetValue("AutoStart", autostartCheckBox.Checked);
+                Application.UserAppDataRegistry.SetValue("StartMinimized", config.startMinimized);
+                SetAutoStart(autostartCheckBox.Checked);
 
-              
             }
             catch (Exception e3)
             {
@@ -127,10 +172,10 @@ namespace InterfaceTrafficWatch
         {
             try
             {
-                int value = System.Convert.ToInt32(textBox4.Text, 10);
+                int value = System.Convert.ToInt32(widthText.Text, 10);
                 if (value < 100) value = 100;
                 if (value > 500) value = 500;
-                textBox4.Text = value + "";
+                widthText.Text = value + "";
             }
             catch (Exception ee)
             {
@@ -142,14 +187,14 @@ namespace InterfaceTrafficWatch
         {
             try
             {
-                int value = System.Convert.ToInt32(textBox1.Text, 10);
+                int value = System.Convert.ToInt32(maxDlText.Text, 10);
                 if (value < 1) value = 1;
 
-                textBox1.Text = value + "";
+                maxDlText.Text = value + "";
             }
             catch (Exception ee)
             {
-                textBox1.Text = 260 + "";
+                maxDlText.Text = 260 + "";
             }
         }
 
@@ -157,14 +202,14 @@ namespace InterfaceTrafficWatch
         {
             try
             {
-                int value = System.Convert.ToInt32(textBox2.Text, 10);
+                int value = System.Convert.ToInt32(maxUpText.Text, 10);
                 if (value < 1) value = 1;
 
-                textBox2.Text = value + "";
+                maxUpText.Text = value + "";
             }
             catch (Exception ee)
             {
-                textBox2.Text = 35 + "";
+                maxUpText.Text = 35 + "";
             }
         }
 
@@ -172,14 +217,14 @@ namespace InterfaceTrafficWatch
         {
             try
             {
-                int value = System.Convert.ToInt32(textBox3.Text, 10);
+                int value = System.Convert.ToInt32(refreshText.Text, 10);
                 if (value < 100) value = 100;
                 if (value > 10000) value = 10000;
-                textBox3.Text = value + "";
+                refreshText.Text = value + "";
             }
             catch (Exception ee)
             {
-                textBox3.Text = 500 + "";
+                refreshText.Text = 500 + "";
             }
         }
 
@@ -187,10 +232,10 @@ namespace InterfaceTrafficWatch
         {
             try
             {
-                int value = System.Convert.ToInt32(textBox5.Text, 10);
+                int value = System.Convert.ToInt32(heightText.Text, 10);
                 if (value < 100) value = 100;
                 if (value > 600) value = 600;
-                textBox5.Text = value + "";
+                heightText.Text = value + "";
             }
             catch (Exception ee)
             {
@@ -198,11 +243,6 @@ namespace InterfaceTrafficWatch
             }
         }
 
-
-
-
-
-
-
+  
     }
 }

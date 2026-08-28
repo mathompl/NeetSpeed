@@ -1,4 +1,4 @@
-﻿namespace InterfaceTrafficWatch
+﻿namespace NetSpeed
 {
     partial class Setup
     {
@@ -30,30 +30,32 @@
         {
             this.lblInterface = new System.Windows.Forms.Label();
             this.cmbInterface = new System.Windows.Forms.ComboBox();
-            this.button1 = new System.Windows.Forms.Button();
+            this.buttonSave = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
-            this.textBox1 = new System.Windows.Forms.TextBox();
-            this.textBox2 = new System.Windows.Forms.TextBox();
+            this.maxDlText = new System.Windows.Forms.TextBox();
+            this.maxUpText = new System.Windows.Forms.TextBox();
             this.label3 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
             this.label5 = new System.Windows.Forms.Label();
-            this.textBox3 = new System.Windows.Forms.TextBox();
+            this.refreshText = new System.Windows.Forms.TextBox();
             this.label6 = new System.Windows.Forms.Label();
-            this.button2 = new System.Windows.Forms.Button();
-            this.checkBox1 = new System.Windows.Forms.CheckBox();
-            this.textBox4 = new System.Windows.Forms.TextBox();
+            this.buttonCancel = new System.Windows.Forms.Button();
+            this.showavgCheckbox = new System.Windows.Forms.CheckBox();
+            this.widthText = new System.Windows.Forms.TextBox();
             this.label7 = new System.Windows.Forms.Label();
             this.label8 = new System.Windows.Forms.Label();
             this.label9 = new System.Windows.Forms.Label();
-            this.textBox5 = new System.Windows.Forms.TextBox();
+            this.heightText = new System.Windows.Forms.TextBox();
             this.label10 = new System.Windows.Forms.Label();
-            this.textBox6 = new System.Windows.Forms.TextBox();
+            this.fontLegendText = new System.Windows.Forms.TextBox();
             this.label11 = new System.Windows.Forms.Label();
             this.label12 = new System.Windows.Forms.Label();
-            this.textBox7 = new System.Windows.Forms.TextBox();
+            this.fontText = new System.Windows.Forms.TextBox();
             this.label13 = new System.Windows.Forms.Label();
             this.label14 = new System.Windows.Forms.Label();
+            this.autostartCheckBox = new System.Windows.Forms.CheckBox();
+            this.startMinimizedCheckbox = new System.Windows.Forms.CheckBox();
             this.SuspendLayout();
             // 
             // lblInterface
@@ -77,15 +79,15 @@
             this.cmbInterface.Size = new System.Drawing.Size(248, 24);
             this.cmbInterface.TabIndex = 2;
             // 
-            // button1
+            // buttonSave
             // 
-            this.button1.Location = new System.Drawing.Point(12, 283);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(75, 23);
-            this.button1.TabIndex = 4;
-            this.button1.Text = "Save";
-            this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += new System.EventHandler(this.button1_Click);
+            this.buttonSave.Location = new System.Drawing.Point(12, 283);
+            this.buttonSave.Name = "buttonSave";
+            this.buttonSave.Size = new System.Drawing.Size(75, 23);
+            this.buttonSave.TabIndex = 4;
+            this.buttonSave.Text = "Save";
+            this.buttonSave.UseVisualStyleBackColor = true;
+            this.buttonSave.Click += new System.EventHandler(this.button1_Click);
             // 
             // label1
             // 
@@ -107,25 +109,25 @@
             this.label2.TabIndex = 6;
             this.label2.Text = "Max upload";
             // 
-            // textBox1
+            // maxDlText
             // 
-            this.textBox1.Location = new System.Drawing.Point(142, 44);
-            this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(100, 22);
-            this.textBox1.TabIndex = 7;
-            this.textBox1.Text = "250";
-            this.textBox1.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
-            this.textBox1.Validating += new System.ComponentModel.CancelEventHandler(this.textBox1_Validating);
+            this.maxDlText.Location = new System.Drawing.Point(142, 44);
+            this.maxDlText.Name = "maxDlText";
+            this.maxDlText.Size = new System.Drawing.Size(100, 22);
+            this.maxDlText.TabIndex = 7;
+            this.maxDlText.Text = "250";
+            this.maxDlText.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.maxDlText.Validating += new System.ComponentModel.CancelEventHandler(this.textBox1_Validating);
             // 
-            // textBox2
+            // maxUpText
             // 
-            this.textBox2.Location = new System.Drawing.Point(142, 72);
-            this.textBox2.Name = "textBox2";
-            this.textBox2.Size = new System.Drawing.Size(100, 22);
-            this.textBox2.TabIndex = 8;
-            this.textBox2.Text = "35";
-            this.textBox2.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
-            this.textBox2.Validating += new System.ComponentModel.CancelEventHandler(this.textBox2_Validating);
+            this.maxUpText.Location = new System.Drawing.Point(142, 72);
+            this.maxUpText.Name = "maxUpText";
+            this.maxUpText.Size = new System.Drawing.Size(100, 22);
+            this.maxUpText.TabIndex = 8;
+            this.maxUpText.Text = "35";
+            this.maxUpText.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.maxUpText.Validating += new System.ComponentModel.CancelEventHandler(this.textBox2_Validating);
             // 
             // label3
             // 
@@ -155,15 +157,15 @@
             this.label5.TabIndex = 11;
             this.label5.Text = "Refresh interval";
             // 
-            // textBox3
+            // refreshText
             // 
-            this.textBox3.Location = new System.Drawing.Point(142, 99);
-            this.textBox3.Name = "textBox3";
-            this.textBox3.Size = new System.Drawing.Size(100, 22);
-            this.textBox3.TabIndex = 12;
-            this.textBox3.Text = "500";
-            this.textBox3.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
-            this.textBox3.Validating += new System.ComponentModel.CancelEventHandler(this.textBox3_Validating);
+            this.refreshText.Location = new System.Drawing.Point(142, 99);
+            this.refreshText.Name = "refreshText";
+            this.refreshText.Size = new System.Drawing.Size(100, 22);
+            this.refreshText.TabIndex = 12;
+            this.refreshText.Text = "500";
+            this.refreshText.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.refreshText.Validating += new System.ComponentModel.CancelEventHandler(this.textBox3_Validating);
             // 
             // label6
             // 
@@ -174,37 +176,37 @@
             this.label6.TabIndex = 13;
             this.label6.Text = "ms";
             // 
-            // button2
+            // buttonCancel
             // 
-            this.button2.Location = new System.Drawing.Point(398, 283);
-            this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(75, 23);
-            this.button2.TabIndex = 14;
-            this.button2.Text = "Cancel";
-            this.button2.UseVisualStyleBackColor = true;
-            this.button2.Click += new System.EventHandler(this.button2_Click);
+            this.buttonCancel.Location = new System.Drawing.Point(398, 283);
+            this.buttonCancel.Name = "buttonCancel";
+            this.buttonCancel.Size = new System.Drawing.Size(75, 23);
+            this.buttonCancel.TabIndex = 14;
+            this.buttonCancel.Text = "Cancel";
+            this.buttonCancel.UseVisualStyleBackColor = true;
+            this.buttonCancel.Click += new System.EventHandler(this.button2_Click);
             // 
-            // checkBox1
+            // showavgCheckbox
             // 
-            this.checkBox1.AutoSize = true;
-            this.checkBox1.Checked = true;
-            this.checkBox1.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.checkBox1.Location = new System.Drawing.Point(142, 254);
-            this.checkBox1.Name = "checkBox1";
-            this.checkBox1.Size = new System.Drawing.Size(113, 20);
-            this.checkBox1.TabIndex = 16;
-            this.checkBox1.Text = "Show average";
-            this.checkBox1.UseVisualStyleBackColor = true;
+            this.showavgCheckbox.AutoSize = true;
+            this.showavgCheckbox.Checked = true;
+            this.showavgCheckbox.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.showavgCheckbox.Location = new System.Drawing.Point(309, 46);
+            this.showavgCheckbox.Name = "showavgCheckbox";
+            this.showavgCheckbox.Size = new System.Drawing.Size(113, 20);
+            this.showavgCheckbox.TabIndex = 16;
+            this.showavgCheckbox.Text = "Show average";
+            this.showavgCheckbox.UseVisualStyleBackColor = true;
             // 
-            // textBox4
+            // widthText
             // 
-            this.textBox4.Location = new System.Drawing.Point(142, 127);
-            this.textBox4.Name = "textBox4";
-            this.textBox4.Size = new System.Drawing.Size(100, 22);
-            this.textBox4.TabIndex = 17;
-            this.textBox4.Text = "200";
-            this.textBox4.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
-            this.textBox4.Validating += new System.ComponentModel.CancelEventHandler(this.textBox4_Validating);
+            this.widthText.Location = new System.Drawing.Point(142, 127);
+            this.widthText.Name = "widthText";
+            this.widthText.Size = new System.Drawing.Size(100, 22);
+            this.widthText.TabIndex = 17;
+            this.widthText.Text = "200";
+            this.widthText.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.widthText.Validating += new System.ComponentModel.CancelEventHandler(this.textBox4_Validating);
             // 
             // label7
             // 
@@ -235,15 +237,15 @@
             this.label9.TabIndex = 20;
             this.label9.Text = "Height";
             // 
-            // textBox5
+            // heightText
             // 
-            this.textBox5.Location = new System.Drawing.Point(142, 155);
-            this.textBox5.Name = "textBox5";
-            this.textBox5.Size = new System.Drawing.Size(100, 22);
-            this.textBox5.TabIndex = 21;
-            this.textBox5.Text = "150";
-            this.textBox5.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
-            this.textBox5.Validating += new System.ComponentModel.CancelEventHandler(this.textBox5_Validating);
+            this.heightText.Location = new System.Drawing.Point(142, 155);
+            this.heightText.Name = "heightText";
+            this.heightText.Size = new System.Drawing.Size(100, 22);
+            this.heightText.TabIndex = 21;
+            this.heightText.Text = "150";
+            this.heightText.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.heightText.Validating += new System.ComponentModel.CancelEventHandler(this.textBox5_Validating);
             // 
             // label10
             // 
@@ -254,14 +256,14 @@
             this.label10.TabIndex = 22;
             this.label10.Text = "px";
             // 
-            // textBox6
+            // fontLegendText
             // 
-            this.textBox6.Location = new System.Drawing.Point(142, 210);
-            this.textBox6.Name = "textBox6";
-            this.textBox6.Size = new System.Drawing.Size(100, 22);
-            this.textBox6.TabIndex = 26;
-            this.textBox6.Text = "5";
-            this.textBox6.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.fontLegendText.Location = new System.Drawing.Point(142, 210);
+            this.fontLegendText.Name = "fontLegendText";
+            this.fontLegendText.Size = new System.Drawing.Size(100, 22);
+            this.fontLegendText.TabIndex = 26;
+            this.fontLegendText.Text = "5";
+            this.fontLegendText.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
             // label11
             // 
@@ -283,14 +285,14 @@
             this.label12.TabIndex = 24;
             this.label12.Text = "Font ";
             // 
-            // textBox7
+            // fontText
             // 
-            this.textBox7.Location = new System.Drawing.Point(142, 182);
-            this.textBox7.Name = "textBox7";
-            this.textBox7.Size = new System.Drawing.Size(100, 22);
-            this.textBox7.TabIndex = 23;
-            this.textBox7.Text = "6";
-            this.textBox7.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.fontText.Location = new System.Drawing.Point(142, 182);
+            this.fontText.Name = "fontText";
+            this.fontText.Size = new System.Drawing.Size(100, 22);
+            this.fontText.TabIndex = 23;
+            this.fontText.Text = "6";
+            this.fontText.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
             // label13
             // 
@@ -310,35 +312,61 @@
             this.label14.TabIndex = 28;
             this.label14.Text = "px";
             // 
+            // autostartCheckBox
+            // 
+            this.autostartCheckBox.AutoSize = true;
+            this.autostartCheckBox.Checked = true;
+            this.autostartCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.autostartCheckBox.Location = new System.Drawing.Point(142, 237);
+            this.autostartCheckBox.Name = "autostartCheckBox";
+            this.autostartCheckBox.Size = new System.Drawing.Size(132, 20);
+            this.autostartCheckBox.TabIndex = 29;
+            this.autostartCheckBox.Text = "Start with windows";
+            this.autostartCheckBox.UseVisualStyleBackColor = true;
+            // 
+            // startMinimizedCheckbox
+            // 
+            this.startMinimizedCheckbox.AutoSize = true;
+            this.startMinimizedCheckbox.Checked = true;
+            this.startMinimizedCheckbox.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.startMinimizedCheckbox.Location = new System.Drawing.Point(142, 263);
+            this.startMinimizedCheckbox.Name = "startMinimizedCheckbox";
+            this.startMinimizedCheckbox.Size = new System.Drawing.Size(116, 20);
+            this.startMinimizedCheckbox.TabIndex = 30;
+            this.startMinimizedCheckbox.Text = "Start minimized";
+            this.startMinimizedCheckbox.UseVisualStyleBackColor = true;
+            // 
             // Setup
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(485, 318);
+            this.Controls.Add(this.startMinimizedCheckbox);
+            this.Controls.Add(this.autostartCheckBox);
             this.Controls.Add(this.label14);
             this.Controls.Add(this.label13);
-            this.Controls.Add(this.textBox6);
+            this.Controls.Add(this.fontLegendText);
             this.Controls.Add(this.label11);
             this.Controls.Add(this.label12);
-            this.Controls.Add(this.textBox7);
+            this.Controls.Add(this.fontText);
             this.Controls.Add(this.label10);
-            this.Controls.Add(this.textBox5);
+            this.Controls.Add(this.heightText);
             this.Controls.Add(this.label9);
             this.Controls.Add(this.label8);
             this.Controls.Add(this.label7);
-            this.Controls.Add(this.textBox4);
-            this.Controls.Add(this.checkBox1);
-            this.Controls.Add(this.button2);
+            this.Controls.Add(this.widthText);
+            this.Controls.Add(this.showavgCheckbox);
+            this.Controls.Add(this.buttonCancel);
             this.Controls.Add(this.label6);
-            this.Controls.Add(this.textBox3);
+            this.Controls.Add(this.refreshText);
             this.Controls.Add(this.label5);
             this.Controls.Add(this.label4);
             this.Controls.Add(this.label3);
-            this.Controls.Add(this.textBox2);
-            this.Controls.Add(this.textBox1);
+            this.Controls.Add(this.maxUpText);
+            this.Controls.Add(this.maxDlText);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
-            this.Controls.Add(this.button1);
+            this.Controls.Add(this.buttonSave);
             this.Controls.Add(this.lblInterface);
             this.Controls.Add(this.cmbInterface);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
@@ -354,29 +382,31 @@
 
         private System.Windows.Forms.Label lblInterface;
         private System.Windows.Forms.ComboBox cmbInterface;
-        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button buttonSave;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
-        private System.Windows.Forms.TextBox textBox1;
-        private System.Windows.Forms.TextBox textBox2;
+        private System.Windows.Forms.TextBox maxDlText;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.Label label5;
-        private System.Windows.Forms.TextBox textBox3;
+        private System.Windows.Forms.TextBox refreshText;
         private System.Windows.Forms.Label label6;
-        private System.Windows.Forms.Button button2;
-        private System.Windows.Forms.CheckBox checkBox1;
-        private System.Windows.Forms.TextBox textBox4;
+        private System.Windows.Forms.Button buttonCancel;
+        private System.Windows.Forms.CheckBox showavgCheckbox;
+        private System.Windows.Forms.TextBox widthText;
         private System.Windows.Forms.Label label7;
         private System.Windows.Forms.Label label8;
         private System.Windows.Forms.Label label9;
-        private System.Windows.Forms.TextBox textBox5;
+        private System.Windows.Forms.TextBox heightText;
         private System.Windows.Forms.Label label10;
-        private System.Windows.Forms.TextBox textBox6;
+        private System.Windows.Forms.TextBox fontLegendText;
         private System.Windows.Forms.Label label11;
         private System.Windows.Forms.Label label12;
-        private System.Windows.Forms.TextBox textBox7;
+        private System.Windows.Forms.TextBox fontText;
         private System.Windows.Forms.Label label13;
         private System.Windows.Forms.Label label14;
+        private System.Windows.Forms.CheckBox autostartCheckBox;
+        private System.Windows.Forms.TextBox maxUpText;
+        private System.Windows.Forms.CheckBox startMinimizedCheckbox;
     }
 }
