@@ -1,4 +1,4 @@
-Simple network monitoring for Windows x64. 
+Simple network speed monitoring for Windows. 
 
 Sits in tray and shows current download/upload speed.
 
