@@ -1,83 +1,80 @@
-﻿using NetSpeed;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.ComponentModel;
-using System.Data;
-using System.Drawing;
 using System.Net.NetworkInformation;
-using System.Text;
 using System.Windows.Forms;
 using Microsoft.Win32;
-using System.Windows.Forms;
 
 namespace NetSpeed
 {
     public partial class Setup : Form
     {
-
-
         private const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
         private const string RunName = "NetSpeed";
 
-
         private NetworkInterface[] nicArr;
-
-        private String nicName;
+        private string nicName;
+        private string nicId;
         private Config config;
 
-        /// <summary>
-        /// Initialize all network interfaces on this computer
-        /// </summary>
         private void InitializeNetworkInterface()
         {
-            // Grab all local interfaces to this computer
+            cmbInterface.Items.Clear();
+
             nicArr = NetworkInterface.GetAllNetworkInterfaces();
             int ix = 0;
-            // Add each interface name to the combo box
+
             for (int i = 0; i < nicArr.Length; i++)
             {
-                if (nicName != null && nicName == nicArr[i].Name) ix = i;
                 cmbInterface.Items.Add(nicArr[i].Name);
+
+                bool matchId = !string.IsNullOrEmpty(nicId) && nicArr[i].Id == nicId;
+                bool matchName = !string.IsNullOrEmpty(nicName) &&
+                                 string.Equals(nicArr[i].Name, nicName, StringComparison.OrdinalIgnoreCase);
+
+                if (matchId || matchName)
+                    ix = i;
             }
 
-            // Change the initial selection to the first interface
-            cmbInterface.SelectedIndex = ix;
+            if (cmbInterface.Items.Count > 0)
+                cmbInterface.SelectedIndex = ix;
         }
 
         public Setup(Config config)
         {
             InitializeComponent();
             this.config = config;
-            if (Application.UserAppDataRegistry.GetValue("MaxDL") != null)
-            {
-                try
-                {
-                    maxDlText.Text = config.max.ToString();
-                    maxUpText.Text = config.maxup.ToString();
-                    refreshText.Text = config.timerUpdate.ToString();
-                    widthText.Text = config.width.ToString();
-                    heightText.Text = config.height.ToString();
-                    fontText.Text = config.font.ToString();
-                    fontLegendText.Text = config.fontLegend.ToString();
-                    if (config.startMinimized) startMinimizedCheckbox.Checked = true;
-                    else startMinimizedCheckbox.Checked = false;
-                    
-                  
-                    nicName = config.nic.Name.ToString();
-                    if (config.paintAvg) showavgCheckbox.Checked = true;
-                    else showavgCheckbox.Checked = false;
 
-                }
-                catch (Exception e)
+            try
+            {
+                maxDlText.Text = config.max.ToString();
+                maxUpText.Text = config.maxup.ToString();
+                refreshText.Text = config.timerUpdate.ToString();
+                widthText.Text = config.width.ToString();
+                heightText.Text = config.height.ToString();
+                fontText.Text = config.font.ToString();
+                fontLegendText.Text = config.fontLegend.ToString();
+                startMinimizedCheckbox.Checked = config.startMinimized;
+                showavgCheckbox.Checked = config.paintAvg;
+
+                if (config.nic != null)
                 {
-                    return;
+                    nicName = config.nic.Name;
+                    nicId = config.nic.Id;
+                }
+                else
+                {
+                    nicName = config.nicName;
+                    nicId = config.nicId;
                 }
             }
-            InitializeNetworkInterface();
+            catch
+            {
+                // combo i tak musi się wypełnić
+            }
 
+            InitializeNetworkInterface();
             autostartCheckBox.Checked = IsAutoStart();
         }
-
 
         private static string ExePath()
         {
@@ -90,6 +87,7 @@ namespace NetSpeed
             {
                 if (key == null)
                     return false;
+
                 object v = key.GetValue(RunName);
                 return v != null && string.Equals(v.ToString(), ExePath(), StringComparison.OrdinalIgnoreCase);
             }
@@ -109,35 +107,41 @@ namespace NetSpeed
             }
         }
 
-
-
         private void button1_Click(object sender, EventArgs e)
         {
             try
             {
-                nicArr = NetworkInterface.GetAllNetworkInterfaces();
-                nicName = cmbInterface.SelectedItem.ToString();
-
-                for (int i = 0; i < nicArr.Length; i++)
+                if (cmbInterface.SelectedItem == null)
                 {
-                    if (nicName != null && nicName == nicArr[i].Name)
-                    {
-                        config.nic = nicArr[i];
-                        break;
-                    }
-
+                    MessageBox.Show("Wybierz interfejs sieciowy.");
+                    return;
                 }
-                config.max = System.Convert.ToInt32(maxDlText.Text, 10);
-                config.maxup = System.Convert.ToInt32(maxUpText.Text, 10);
-                config.timerUpdate = System.Convert.ToInt32(refreshText.Text, 10);
+
+                nicName = cmbInterface.SelectedItem.ToString();
+                NetworkInterface selected = Config.FindInterface(null, nicName);
+
+                if (selected == null)
+                {
+                    MessageBox.Show("Nie znaleziono wybranego interfejsu.");
+                    return;
+                }
+
+                config.nic = selected;
+                config.nicId = selected.Id;
+                config.nicName = selected.Name;
+
+                config.max = Convert.ToInt32(maxDlText.Text, 10);
+                config.maxup = Convert.ToInt32(maxUpText.Text, 10);
+                config.timerUpdate = Convert.ToInt32(refreshText.Text, 10);
                 config.paintAvg = showavgCheckbox.Checked;
                 config.startMinimized = startMinimizedCheckbox.Checked;
-                config.width = System.Convert.ToInt32(widthText.Text, 10);
-                config.height = System.Convert.ToInt32(heightText.Text, 10);
-                config.font = System.Convert.ToInt32(fontText.Text, 10);
-                config.fontLegend = System.Convert.ToInt32(fontLegendText.Text, 10); ;
+                config.width = Convert.ToInt32(widthText.Text, 10);
+                config.height = Convert.ToInt32(heightText.Text, 10);
+                config.font = Convert.ToInt32(fontText.Text, 10);
+                config.fontLegend = Convert.ToInt32(fontLegendText.Text, 10);
 
-                Application.UserAppDataRegistry.SetValue("Interface", config.nic.Name.ToString());
+                Application.UserAppDataRegistry.SetValue("Interface", selected.Name);
+                Application.UserAppDataRegistry.SetValue("InterfaceId", selected.Id);
                 Application.UserAppDataRegistry.SetValue("MaxDL", config.max);
                 Application.UserAppDataRegistry.SetValue("MaxUP", config.maxup);
                 Application.UserAppDataRegistry.SetValue("Timer", config.timerUpdate);
@@ -150,36 +154,32 @@ namespace NetSpeed
                 Application.UserAppDataRegistry.SetValue("StartMinimized", config.startMinimized);
                 SetAutoStart(autostartCheckBox.Checked);
 
+                DialogResult = DialogResult.OK;
+                Close();
             }
-            catch (Exception e3)
+            catch (Exception ex)
             {
-
+                MessageBox.Show("Nie udało się zapisać ustawień:\n" + ex.Message);
             }
-            this.Close();
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
-            this.Close();
+            DialogResult = DialogResult.Cancel;
+            Close();
         }
-
-
-
-
-
 
         private void textBox4_Validating(object sender, CancelEventArgs e)
         {
             try
             {
-                int value = System.Convert.ToInt32(widthText.Text, 10);
+                int value = Convert.ToInt32(widthText.Text, 10);
                 if (value < 100) value = 100;
                 if (value > 500) value = 500;
-                widthText.Text = value + "";
+                widthText.Text = value.ToString();
             }
-            catch (Exception ee)
+            catch
             {
-                //    textBox4.Text = 200+"";
             }
         }
 
@@ -187,14 +187,13 @@ namespace NetSpeed
         {
             try
             {
-                int value = System.Convert.ToInt32(maxDlText.Text, 10);
+                int value = Convert.ToInt32(maxDlText.Text, 10);
                 if (value < 1) value = 1;
-
-                maxDlText.Text = value + "";
+                maxDlText.Text = value.ToString();
             }
-            catch (Exception ee)
+            catch
             {
-                maxDlText.Text = 260 + "";
+                maxDlText.Text = "260";
             }
         }
 
@@ -202,14 +201,13 @@ namespace NetSpeed
         {
             try
             {
-                int value = System.Convert.ToInt32(maxUpText.Text, 10);
+                int value = Convert.ToInt32(maxUpText.Text, 10);
                 if (value < 1) value = 1;
-
-                maxUpText.Text = value + "";
+                maxUpText.Text = value.ToString();
             }
-            catch (Exception ee)
+            catch
             {
-                maxUpText.Text = 35 + "";
+                maxUpText.Text = "35";
             }
         }
 
@@ -217,14 +215,14 @@ namespace NetSpeed
         {
             try
             {
-                int value = System.Convert.ToInt32(refreshText.Text, 10);
+                int value = Convert.ToInt32(refreshText.Text, 10);
                 if (value < 100) value = 100;
                 if (value > 10000) value = 10000;
-                refreshText.Text = value + "";
+                refreshText.Text = value.ToString();
             }
-            catch (Exception ee)
+            catch
             {
-                refreshText.Text = 500 + "";
+                refreshText.Text = "500";
             }
         }
 
@@ -232,17 +230,14 @@ namespace NetSpeed
         {
             try
             {
-                int value = System.Convert.ToInt32(heightText.Text, 10);
+                int value = Convert.ToInt32(heightText.Text, 10);
                 if (value < 100) value = 100;
                 if (value > 600) value = 600;
-                heightText.Text = value + "";
+                heightText.Text = value.ToString();
             }
-            catch (Exception ee)
+            catch
             {
-                //   textBox5.Text = 150 + "";
             }
         }
-
-  
     }
 }

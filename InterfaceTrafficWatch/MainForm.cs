@@ -416,6 +416,7 @@ namespace NetSpeed
                 config.writeConfig();
                 setup.ShowDialog();
                 ReloadConfig();
+                nicId = config.nicId ?? (config.nic != null ? config.nic.Id : null);
                 InitializeNetwork();
                 //dataIn.Clear();
                 //dataOut.Clear();
